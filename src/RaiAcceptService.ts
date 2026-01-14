@@ -134,16 +134,19 @@ export class RaiAcceptService {
   static transliterateAndLimitLength(string: string | null | undefined, limit: number = 127): string | null {
     if (!string) return null;
 
-    string = this.transliterate(string);
+    const transliterated = this.transliterate(string);
+    if (!transliterated) return null;
 
-    if (string.length > limit) {
-      string = string.substring(0, limit);
+    let result = transliterated;
+
+    if (result.length > limit) {
+      result = result.substring(0, limit);
     }
 
     // Replace potentially problematic characters
-    string = string.replace(/[&;<>|`\\]/g, ' ');
+    result = result.replace(/[&;<>|`\\]/g, ' ');
 
-    return string === '' ? null : string;
+    return result === '' ? null : result;
   }
 
   /**
