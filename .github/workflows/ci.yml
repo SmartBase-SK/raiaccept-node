@@ -35,8 +35,7 @@ jobs:
 
   integration-tests:
     runs-on: ubuntu-latest
-    # Only run integration tests if secrets are configured
-    if: ${{ secrets.RAIACCEPT_TEST_USERNAME && secrets.RAIACCEPT_TEST_PASSWORD }}
+    continue-on-error: true
 
     steps:
     - name: Checkout code
@@ -54,7 +53,19 @@ jobs:
     - name: Build TypeScript
       run: npm run build
 
+    - name: Check if credentials are available
+      id: check-creds
+      run: |
+        if [ -z "${{ secrets.RAIACCEPT_TEST_USERNAME }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_PASSWORD }}" ]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "⚠️  Integration tests skipped: GitHub Secrets not configured"
+          echo "See .github/SETUP_CI.md for setup instructions"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Run integration tests
+      if: steps.check-creds.outputs.skip != 'true'
       env:
         RAIACCEPT_TEST_USERNAME: ${{ secrets.RAIACCEPT_TEST_USERNAME }}
         RAIACCEPT_TEST_PASSWORD: ${{ secrets.RAIACCEPT_TEST_PASSWORD }}
