@@ -1,5 +1,10 @@
 # RaiAccept TypeScript SDK
 
+[![CI](https://github.com/SmartBase-SK/raiaccept-node/actions/workflows/ci.yml/badge.svg)](https://github.com/SmartBase-SK/raiaccept-node/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@raiaccept/raiaccept-api-client.svg)](https://www.npmjs.com/package/@raiaccept/raiaccept-api-client)
+[![License](https://img.shields.io/badge/license-OSL--3.0-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-blue.svg)](https://www.typescriptlang.org/)
+
 TypeScript/JavaScript SDK for RaiAccept payment gateway API.
 
 ## Installation
@@ -25,7 +30,7 @@ const accessToken = await service.retrieveAccessTokenWithCredentials(
 const response = await service.createOrderEntry(accessToken, orderRequest);
 ```
 
-### Manual Setup
+### Create Payment
 
 ```typescript
 import { RaiAcceptService, HttpClient } from '@raiaccept/raiaccept-api-client';

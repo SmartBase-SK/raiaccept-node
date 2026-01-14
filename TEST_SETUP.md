@@ -106,25 +106,3 @@ For automated testing in CI/CD pipelines:
 - name: Run integration tests
   run: npm run integration-tests
 ```
-
-## Dependencies
-
-### Runtime
-- `axios`: ^1.6.0 (HTTP client)
-
-### Development
-- `vitest`: ^1.3.1 (test framework)
-- `@vitest/ui`: ^1.3.1 (optional UI)
-- `vite`: ^5.1.4 (build tool)
-- `jsdom`: ^24.0.0 (DOM environment, if needed)
-
-## Troubleshooting
-
-### Debug Mode
-```bash
-# Run with debug output
-DEBUG=vite:* npm run unit-tests
-
-# Run single test file
-npx vitest run tests/unit.test.js
-```
