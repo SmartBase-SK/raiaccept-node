@@ -1,0 +1,19 @@
+node_modules/
+package-lock.json
+*.log
+.DS_Store
+dist/
+coverage/
+.env
+
+# Vitest
+.nyc_output/
+vitest.config.js.timestamp-*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+
