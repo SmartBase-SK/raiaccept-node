@@ -6,6 +6,7 @@
 // Core API - Use RaiAcceptService as the unified client
 export { RaiAcceptService } from './RaiAcceptService.js';
 export { HttpClient, type Logger, type HttpClientConfig, type HttpRequest, type HttpResponse } from './HttpClient.js';
+export { RaiAcceptLogger } from './RaiAcceptLogger.js';
 
 // RaiAcceptAPIApi is exported for backward compatibility but deprecated
 // Use RaiAcceptService instead for all API operations
