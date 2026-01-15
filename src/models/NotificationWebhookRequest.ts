@@ -1,32 +1,60 @@
+import { CreateOrderEntryResponse } from './CreateOrderEntryResponse.js';
+import { Transaction } from './Transaction.js';
+import { Merchant } from './Merchant.js';
+import { Card } from './Card.js';
+
 /**
  * NotificationWebhookRequest
  * @category Model
  */
 export class NotificationWebhookRequest {
-  orderId: string = '';
-  transactionId: string = '';
-  status: string = '';
-  amount: number = 0.0;
-  currency: string = '';
-  timestamp: string = '';
+  order: CreateOrderEntryResponse;
+  transaction: Transaction;
+  merchant: Merchant;
+  card: Card;
 
   constructor() {
-    this.orderId = '';
-    this.transactionId = '';
-    this.status = '';
-    this.amount = 0.0;
-    this.currency = '';
-    this.timestamp = '';
+    this.order = new CreateOrderEntryResponse();
+    this.transaction = new Transaction();
+    this.merchant = new Merchant();
+    this.card = new Card();
   }
 
   static fromObject(data: any = {}): NotificationWebhookRequest {
     const instance = new NotificationWebhookRequest();
-    instance.orderId = data.orderId || '';
-    instance.transactionId = data.transactionId || '';
-    instance.status = data.status || '';
-    instance.amount = data.amount || 0.0;
-    instance.currency = data.currency || '';
-    instance.timestamp = data.timestamp || '';
+    instance.order = data.order instanceof CreateOrderEntryResponse
+      ? data.order
+      : CreateOrderEntryResponse.fromObject(data.order || {});
+    instance.transaction = data.transaction instanceof Transaction
+      ? data.transaction
+      : Transaction.fromObject(data.transaction || {});
+    instance.merchant = data.merchant instanceof Merchant
+      ? data.merchant
+      : Merchant.fromObject(data.merchant || {});
+    instance.card = data.card instanceof Card
+      ? data.card
+      : Card.fromObject(data.card || {});
     return instance;
+  }
+
+  /**
+   * Get orderIdentification from the order object
+   */
+  getOrderId(): string {
+    return this.order.orderIdentification || '';
+  }
+
+  /**
+   * Get transactionId from the transaction object
+   */
+  getTransactionId(): string {
+    return this.transaction.getTransactionId();
+  }
+
+  /**
+   * Get status from the transaction object
+   */
+  getStatus(): string {
+    return this.transaction.getStatus();
   }
 }

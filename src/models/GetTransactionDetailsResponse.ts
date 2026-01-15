@@ -13,7 +13,8 @@ export class GetTransactionDetailsResponse extends Transaction {
   }
 
   static fromObject(data: any = {}): GetTransactionDetailsResponse {
-    const instance = Object.assign(new GetTransactionDetailsResponse(), Transaction.fromObject(data));
+    const transactionData = data.transaction || data;
+    const instance = Object.assign(new GetTransactionDetailsResponse(), Transaction.fromObject(transactionData));
     instance.order = data.order || null;
     return instance;
   }
