@@ -13,13 +13,13 @@
 ## Installation
 
 ```bash
-npm install @raiaccept/raiaccept-api-client
+npm install @smartbase-js/raiaccept-api-client
 ```
 
 ## Quick Start
 
 ```javascript
-import { RaiAcceptAPIApi, RaiAcceptService, HttpClient } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptAPIApi, RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 
 // Initialize client
 const httpClient = new HttpClient();

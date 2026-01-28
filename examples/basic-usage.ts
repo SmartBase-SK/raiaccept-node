@@ -3,8 +3,8 @@
  * Demonstrates how to use the RaiAccept TypeScript SDK
  */
 
-import { RaiAcceptService, HttpClient, type ApiResponse } from '@raiaccept/raiaccept-api-client';
-import type { CreateOrderEntryResponse, CreatePaymentSessionResponse, GetOrderDetailsResponse, GetOrderTransactionsResponse } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService, HttpClient, type ApiResponse } from '@smartbase-js/raiaccept-api-client';
+import type { CreateOrderEntryResponse, CreatePaymentSessionResponse, GetOrderDetailsResponse, GetOrderTransactionsResponse } from '@smartbase-js/raiaccept-api-client';
 
 async function main(): Promise<void> {
   try {

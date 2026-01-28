@@ -3,7 +3,7 @@
  * Demonstrates how to handle webhook notifications from RaiAccept
  */
 
-import { NotificationWebhookRequest, RaiAcceptService } from '@raiaccept/raiaccept-api-client';
+import { NotificationWebhookRequest, RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 
 /**
  * Example Express.js webhook handler

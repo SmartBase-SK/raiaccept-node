@@ -1,7 +1,7 @@
 # RaiAccept TypeScript SDK
 
 [![CI](https://github.com/SmartBase-SK/raiaccept-node/actions/workflows/ci.yml/badge.svg)](https://github.com/SmartBase-SK/raiaccept-node/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@raiaccept/raiaccept-api-client.svg)](https://www.npmjs.com/package/@raiaccept/raiaccept-api-client)
+[![npm version](https://img.shields.io/npm/v/@smartbase-js/raiaccept-api-client.svg)](https://www.npmjs.com/package/@smartbase-js/raiaccept-api-client)
 [![License](https://img.shields.io/badge/license-OSL--3.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-blue.svg)](https://www.typescriptlang.org/)
 
@@ -10,13 +10,13 @@ TypeScript/JavaScript SDK for RaiAccept payment gateway API.
 ## Installation
 
 ```bash
-npm install @raiaccept/raiaccept-api-client
+npm install @smartbase-js/raiaccept-api-client
 ```
 
 ## Usage
 
 ```typescript
-import { RaiAcceptService } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 
 // Create service instance
 const service = new RaiAcceptService();
@@ -33,7 +33,7 @@ const response = await service.createOrderEntry(accessToken, orderRequest);
 ### Create Payment
 
 ```typescript
-import { RaiAcceptService, HttpClient } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 
 // Initialize HTTP client (optional, for logging)
 const httpClient = new HttpClient({
@@ -101,7 +101,7 @@ console.log('Payment session created. Redirect customer to:', paymentRedirectURL
 ### Initialization
 
 ```typescript
-import { RaiAcceptService, HttpClient } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 
 // With HTTP client (recommended for logging)
 const httpClient = new HttpClient({ logger: console });

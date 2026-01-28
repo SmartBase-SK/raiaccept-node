@@ -60,7 +60,7 @@ node examples/basic-usage.js
 
 ```javascript
 import express from 'express';
-import { RaiAcceptService } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 
 const app = express();
 
@@ -94,7 +94,7 @@ app.post('/api/create-payment', async (req, res) => {
 ### React / Next.js
 
 ```javascript
-import { RaiAcceptService } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 
 export async function createPayment(orderData) {
   // Create service and authenticate
@@ -126,7 +126,7 @@ export async function createPayment(orderData) {
 ### AWS Lambda
 
 ```javascript
-import { RaiAcceptService } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 
 export const handler = async (event) => {
   // Create service and authenticate

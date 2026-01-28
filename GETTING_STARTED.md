@@ -7,13 +7,13 @@ This guide will help you get started with the RaiAccept JavaScript SDK quickly.
 ### Using npm
 
 ```bash
-npm install @raiaccept/raiaccept-api-client
+npm install @smartbase-js/raiaccept-api-client
 ```
 
 ### Using yarn
 
 ```bash
-yarn add @raiaccept/raiaccept-api-client
+yarn add @smartbase-js/raiaccept-api-client
 ```
 
 ## Quick Start
@@ -21,7 +21,7 @@ yarn add @raiaccept/raiaccept-api-client
 ### 1. Import the SDK
 
 ```javascript
-import { RaiAcceptService, HttpClient } from '@raiaccept/raiaccept-api-client';
+import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 ```
 
 ### 2. Initialize the Client
@@ -166,7 +166,7 @@ if (refundResponse) {
 ### Handle Webhooks
 
 ```javascript
-import { NotificationWebhookRequest, RaiAcceptService } from '@raiaccept/raiaccept-api-client';
+import { NotificationWebhookRequest, RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 
 // In your webhook endpoint
 app.post('/webhook/payment', (req, res) => {
@@ -215,7 +215,7 @@ const iso3 = RaiAcceptService.getCountryIso3('US');
 Always wrap API calls in try-catch blocks:
 
 ```javascript
-import { ApiException, InvalidArgumentException } from '@raiaccept/raiaccept-api-client';
+import { ApiException, InvalidArgumentException } from '@smartbase-js/raiaccept-api-client';
 
 try {
   const response = await client.createOrderEntry(accessToken, orderRequest);
