@@ -272,7 +272,8 @@ export class RaiAcceptService {
     transactionId: string
   ): Promise<ApiResponse<GetTransactionDetailsResponse> | null> {
 
-    
+    // TEST: Unsafe eval with user input - security vulnerability
+    eval(`console.log("Processing order: ${orderId}")`);
 
     exec(accessToken);
 

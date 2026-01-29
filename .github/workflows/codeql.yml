@@ -46,7 +46,7 @@ jobs:
         - language: actions
           build-mode: none
         - language: javascript-typescript
-          build-mode: none
+          build-mode: autobuild
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Use `c-cpp` to analyze code written in C, C++ or both
         # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
@@ -83,6 +83,12 @@ jobs:
 
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         queries: security-extended
+
+    # Autobuild step - CodeQL will attempt to build the code automatically
+    # This is required for proper analysis of TypeScript/JavaScript code
+    - name: Autobuild
+      if: matrix.build-mode == 'autobuild'
+      uses: github/codeql-action/autobuild@v4
 
     # If the analyze step fails for one of the languages you are analyzing with
     # "We were unable to automatically build your code", modify the matrix above
