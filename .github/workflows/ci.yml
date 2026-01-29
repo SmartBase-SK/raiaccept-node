@@ -7,75 +7,66 @@ on:
     branches: [ main ]
 
 jobs:
-  # Placeholder job - tests temporarily disabled while testing code scans
-  placeholder:
+  unit-tests:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
     steps:
-      - name: Tests disabled
-        run: echo "Test stages temporarily disabled while testing code scans"
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  # Temporarily disabled while testing code scans
-  # unit-tests:
-  #   runs-on: ubuntu-latest
-  #
-  #   strategy:
-  #     matrix:
-  #       node-version: [20.x, 22.x]
-  #
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-  #
-  #   - name: Setup Node.js ${{ matrix.node-version }}
-  #     uses: actions/setup-node@v4
-  #     with:
-  #       node-version: ${{ matrix.node-version }}
-  #       cache: 'npm'
-  #
-  #   - name: Install dependencies
-  #     run: npm ci
-  #
-  #   - name: Build TypeScript
-  #     run: npm run build
-  #
-  #   - name: Run unit tests
-  #     run: npm run unit-tests
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
 
-  # Temporarily disabled while testing code scans
-  # integration-tests:
-  #   runs-on: ubuntu-latest
-  #   continue-on-error: true
-  #
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-  #
-  #   - name: Setup Node.js
-  #     uses: actions/setup-node@v4
-  #     with:
-  #       node-version: '22.x'
-  #       cache: 'npm'
-  #
-  #   - name: Install dependencies
-  #     run: npm ci
-  #
-  #   - name: Build TypeScript
-  #     run: npm run build
-  #
-  #   - name: Check if credentials are available
-  #     id: check-creds
-  #     run: |
-  #       if [ -z "${{ secrets.RAIACCEPT_TEST_USERNAME }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_PASSWORD }}" ]; then
-  #         echo "skip=true" >> $GITHUB_OUTPUT
-  #         echo "⚠️  Integration tests skipped: GitHub Secrets not configured"
-  #         echo "See .github/SETUP_CI.md for setup instructions"
-  #       else
-  #         echo "skip=false" >> $GITHUB_OUTPUT
-  #       fi
-  #
-  #   - name: Run integration tests
-  #     if: steps.check-creds.outputs.skip != 'true'
-  #     env:
-  #       RAIACCEPT_TEST_USERNAME: ${{ secrets.RAIACCEPT_TEST_USERNAME }}
-  #       RAIACCEPT_TEST_PASSWORD: ${{ secrets.RAIACCEPT_TEST_PASSWORD }}
-  #     run: npm run integration-tests
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build TypeScript
+      run: npm run build
+
+    - name: Run unit tests
+      run: npm run unit-tests
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build TypeScript
+      run: npm run build
+
+    - name: Check if credentials are available
+      id: check-creds
+      run: |
+        if [ -z "${{ secrets.RAIACCEPT_TEST_USERNAME }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_PASSWORD }}" ]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "⚠️  Integration tests skipped: GitHub Secrets not configured"
+          echo "See .github/SETUP_CI.md for setup instructions"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run integration tests
+      if: steps.check-creds.outputs.skip != 'true'
+      env:
+        RAIACCEPT_TEST_USERNAME: ${{ secrets.RAIACCEPT_TEST_USERNAME }}
+        RAIACCEPT_TEST_PASSWORD: ${{ secrets.RAIACCEPT_TEST_PASSWORD }}
+      run: npm run integration-tests
