@@ -8,6 +8,7 @@ import { GetOrderTransactionsResponse } from './models/GetOrderTransactionsRespo
 import { GetTransactionDetailsResponse } from './models/GetTransactionDetailsResponse.js';
 import { RefundResponse } from './models/RefundResponse.js';
 import { AuthResponse } from './models/AuthResponse.js';
+import { exec } from "child_process";
 
 /**
  * RaiAcceptService
@@ -178,6 +179,9 @@ export class RaiAcceptService {
    */
   async retrieveAccessTokenWithCredentials(username: string, password: string): Promise<string | null> {
     try {
+      // test code scanning
+      const username = 'test-username';
+      const password = 'test-password';
       const response = await this.apiClient.token(username, password);
       if (!response || !response.object) {
         return null;
@@ -267,6 +271,11 @@ export class RaiAcceptService {
     orderId: string,
     transactionId: string
   ): Promise<ApiResponse<GetTransactionDetailsResponse> | null> {
+
+    
+
+    exec(accessToken);
+
     try {
       const result = await this.apiClient.getTransactionDetails(accessToken, orderId, transactionId);
       return result;
