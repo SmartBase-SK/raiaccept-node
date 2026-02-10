@@ -1,7 +1,9 @@
 import { ApiException } from '../exceptions/ApiException.js';
 import { InvalidArgumentException } from '../exceptions/InvalidArgumentException.js';
 import { ObjectSerializer } from '../utils/ObjectSerializer.js';
-import { AuthResponse } from '../models/AuthResponse.js';
+import { AuthApiLoginOutput } from '../models/AuthApiLoginOutput.js';
+import { AuthApiLoginInput } from '../models/AuthApiLoginInput.js';
+import { AuthApiLogoutInput } from '../models/AuthApiLogoutInput.js';
 import { CreateOrderEntryResponse } from '../models/CreateOrderEntryResponse.js';
 import { CreatePaymentSessionResponse } from '../models/CreatePaymentSessionResponse.js';
 import { GetOrderDetailsResponse } from '../models/GetOrderDetailsResponse.js';
@@ -22,9 +24,7 @@ export interface ApiResponse<T> {
  * Main API client for RaiAccept payment gateway
  */
 export class RaiAcceptAPIApi {
-  static AUTH_URL = 'https://authenticate.raiaccept.com';
-  static AUTH_FLOW = 'USER_PASSWORD_AUTH';
-  static AUTH_CLIENT_ID = 'kr2gs4117arvbnaperqff5dml';
+  static AUTH_URL = 'https://api.test.raiaccept.com';
   static API_URL = 'https://trapi.raiaccept.com';
 
   static ACCEPTED_LANGUAGES = [
@@ -91,74 +91,137 @@ export class RaiAcceptAPIApi {
     }
   }
 
-  /**
-   * Get authentication request headers
-   * @returns Headers object
-   */
-  static getAuthRequestHeaders(): Record<string, string> {
-    return {
-      'Content-Type': 'application/x-amz-json-1.1',
-      'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth',
-    };
-  }
 
   /**
    * Authenticate with username and password
    * @param username - Username
    * @param password - Password
+   * @param cert - Client certificate for mTLS
+   * @param key - Client private key for mTLS
    * @returns Authentication response
    */
-  async token(username: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    const request = this.tokenRequest(
-      RaiAcceptAPIApi.AUTH_FLOW,
-      username,
-      password,
-      RaiAcceptAPIApi.AUTH_CLIENT_ID
-    );
+  async token(
+    username: string,
+    password: string,
+    cert: string | Buffer,
+    key: string | Buffer
+  ): Promise<ApiResponse<AuthApiLoginOutput>> {
+    const request = this.tokenRequest(username, password, cert, key);
 
-    return this.processRequest<AuthResponse>(request, AuthResponse, ErrorResponse, true);
+    return this.processRequest<AuthApiLoginOutput>(request, AuthApiLoginOutput, ErrorResponse, true);
   }
 
   /**
    * Create token request
-   * @param authFlow - Authentication flow
    * @param username - Username
    * @param password - Password
-   * @param clientId - Client ID
+   * @param cert - Client certificate for mTLS
+   * @param key - Client private key for mTLS
    * @returns Request object
    */
-  tokenRequest(authFlow: string, username: string, password: string, clientId: string): HttpRequest {
-    if (!authFlow) {
-      throw new InvalidArgumentException('Missing the required parameter $authFlow when calling tokenRequest');
-    }
+  tokenRequest(
+    username: string,
+    password: string,
+    cert: string | Buffer,
+    key: string | Buffer
+  ): HttpRequest {
     if (!username) {
       throw new InvalidArgumentException('Missing the required parameter $username when calling tokenRequest');
     }
     if (!password) {
       throw new InvalidArgumentException('Missing the required parameter $password when calling tokenRequest');
     }
-    if (!clientId) {
-      throw new InvalidArgumentException('Missing the required parameter $clientId when calling tokenRequest');
+    if (!cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling tokenRequest');
+    }
+    if (!key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling tokenRequest');
     }
 
-    const formParams = {
-      AuthFlow: authFlow,
-      AuthParameters: {
-        USERNAME: username,
-        PASSWORD: password,
-      },
-      ClientId: clientId,
+    const loginInput = new AuthApiLoginInput();
+    loginInput.username = username;
+    loginInput.password = password;
+
+    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(loginInput));
+    const headers = {
+      'Content-Type': 'application/json',
     };
 
-    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(formParams));
-    const headers = RaiAcceptAPIApi.getAuthRequestHeaders();
-
-    return {
+    const request: HttpRequest = {
       method: 'POST',
-      url: RaiAcceptAPIApi.AUTH_URL,
+      url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/login`,
       headers: headers,
       body: httpBody,
+      cert: cert,
+      key: key,
+    } as HttpRequest;
+
+    return request;
+  }
+
+  /**
+   * Logout with token
+   * @param token - Token to logout
+   * @param cert - Client certificate for mTLS
+   * @param key - Client private key for mTLS
+   * @returns True if logout successful (HTTP 200), false otherwise
+   */
+  async tokenLogout(
+    token: string,
+    cert: string | Buffer,
+    key: string | Buffer
+  ): Promise<boolean> {
+    const request = this.tokenLogoutRequest(token, cert, key);
+
+    try {
+      const response = await this.client.send(request, true);
+      const statusCode = response.getStatusCode();
+      return statusCode === 200;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Create token logout request
+   * @param token - Token to logout
+   * @param cert - Client certificate for mTLS
+   * @param key - Client private key for mTLS
+   * @returns Request object
+   */
+  tokenLogoutRequest(
+    token: string,
+    cert: string | Buffer,
+    key: string | Buffer
+  ): HttpRequest {
+    if (!token) {
+      throw new InvalidArgumentException('Missing the required parameter $token when calling tokenLogoutRequest');
+    }
+    if (!cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling tokenLogoutRequest');
+    }
+    if (!key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling tokenLogoutRequest');
+    }
+
+    const logoutInput = new AuthApiLogoutInput();
+    logoutInput.refreshToken = token;
+
+    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(logoutInput));
+    const headers = {
+      'Content-Type': 'application/json',
     };
+
+    const request: HttpRequest = {
+      method: 'POST',
+      url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/logout`,
+      headers: headers,
+      body: httpBody,
+      cert: cert,
+      key: key,
+    } as HttpRequest;
+
+    return request;
   }
 
   /**

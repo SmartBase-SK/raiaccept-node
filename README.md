@@ -22,10 +22,13 @@ import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 const service = new RaiAcceptService();
 
 // Authenticate with your credentials
-const accessToken = await service.retrieveAccessTokenWithCredentials(
+const authResult = await service.retrieveAccessTokenWithCredentials(
   'your-username',  // Replace with your actual username
-  'your-password'   // Replace with your actual password
+  'your-password',  // Replace with your actual password
+  cert,             // Client certificate for mTLS
+  key               // Client private key for mTLS
 );
+const accessToken = authResult?.accessToken;
 
 const response = await service.createOrderEntry(accessToken, orderRequest);
 ```
@@ -44,10 +47,13 @@ const httpClient = new HttpClient({
 const service = new RaiAcceptService(httpClient);
 
 // Authenticate
-const accessToken = await service.retrieveAccessTokenWithCredentials(
+const authResult = await service.retrieveAccessTokenWithCredentials(
   'your-username',
-  'your-password'
+  'your-password',
+  cert,  // Client certificate for mTLS
+  key    // Client private key for mTLS
 );
+const accessToken = authResult?.accessToken;
 
 // Create an order and payment session (two-step process)
 const orderRequest = {
@@ -114,10 +120,14 @@ const client = new RaiAcceptService();
 ### Authentication
 
 ```typescript
-const accessToken = await client.retrieveAccessTokenWithCredentials(
+const authResult = await client.retrieveAccessTokenWithCredentials(
   username,
-  password
+  password,
+  cert,  // Client certificate for mTLS
+  key    // Client private key for mTLS
 );
+const accessToken = authResult?.accessToken;
+// Also available: authResult.refreshToken, authResult.accessTokenExpiresIn, authResult.refreshTokenExpiresIn
 ```
 
 ### Order Operations

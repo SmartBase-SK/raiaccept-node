@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import https from 'https';
 
 export interface Logger {
   log(message: string, data?: any): void;
@@ -15,6 +16,8 @@ export interface HttpRequest {
   url: string;
   headers?: Record<string, string>;
   body?: string;
+  cert?: string | Buffer;
+  key?: string | Buffer;
 }
 
 export interface HttpResponse {
@@ -50,6 +53,15 @@ export class HttpClient {
       data: request.body,
       validateStatus: () => true, // Don't throw on any status
     };
+
+    // Add mTLS certificate and key (required for authentication requests)
+    if (request.cert && request.key) {
+      const httpsAgent = new https.Agent({
+        cert: request.cert,
+        key: request.key,
+      });
+      axiosConfig.httpsAgent = httpsAgent;
+    }
 
     if (this.logger && !omitLogging) {
       this.logger.log('Request:', this._sanitizeForLog(request));

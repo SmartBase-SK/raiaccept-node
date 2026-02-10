@@ -19,25 +19,27 @@ npm install @smartbase-js/raiaccept-api-client
 ## Quick Start
 
 ```javascript
-import { RaiAcceptAPIApi, RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
+import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 
 // Initialize client
 const httpClient = new HttpClient();
-const apiClient = new RaiAcceptAPIApi(httpClient);
+const service = new RaiAcceptService(httpClient);
 
 // Authenticate
-const accessToken = await RaiAcceptService.retrieveAccessTokenWithCredentials(
-  apiClient,
+const authResult = await service.retrieveAccessTokenWithCredentials(
   'username',
-  'password'
+  'password',
+  cert,  // Client certificate for mTLS
+  key    // Client private key for mTLS
 );
+const accessToken = authResult?.accessToken;
 
 // Step 1: Create order entry
-const orderResponse = await apiClient.createOrderEntry(accessToken, orderRequest);
+const orderResponse = await service.createOrderEntry(accessToken, orderRequest);
 const orderIdentification = orderResponse.object.getOrderIdentification();
 
 // Step 2: Create payment session for the order
-const paymentSessionResponse = await apiClient.createPaymentSession(
+const paymentSessionResponse = await service.createPaymentSession(
   accessToken,
   orderRequest,
   orderIdentification
@@ -62,20 +64,26 @@ const apiClient = new RaiAcceptAPIApi(httpClient);
 
 #### Methods
 
-##### `token(username, password)`
+##### `token(username, password, cert, key)`
 
-Authenticate with username and password.
+Authenticate with username and password using mTLS.
 
 **Parameters:**
 - `username` (string): Username
 - `password` (string): Password
+- `cert` (string | Buffer): Client certificate for mTLS
+- `key` (string | Buffer): Client private key for mTLS
 
-**Returns:** `Promise<Object>` - Authentication response with access token
+**Returns:** `Promise<ApiResponse<AuthApiLoginOutput>>` - Authentication response with access token, refresh token, and expiration times
 
 **Example:**
 ```javascript
-const response = await apiClient.token('username', 'password');
-const accessToken = response.object.getIdToken();
+const response = await apiClient.token('username', 'password', cert, key);
+const authResult = response.object;
+const accessToken = authResult?.accessToken;
+const refreshToken = authResult?.refreshToken;
+const accessTokenExpiresIn = authResult?.accessTokenExpiresIn;
+const refreshTokenExpiresIn = authResult?.refreshTokenExpiresIn;
 ```
 
 ---

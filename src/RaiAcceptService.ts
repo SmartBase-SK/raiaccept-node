@@ -8,6 +8,7 @@ import { GetOrderTransactionsResponse } from './models/GetOrderTransactionsRespo
 import { GetTransactionDetailsResponse } from './models/GetTransactionDetailsResponse.js';
 import { RefundResponse } from './models/RefundResponse.js';
 import { AuthResponse } from './models/AuthResponse.js';
+import { AuthApiLoginOutput } from './models/AuthApiLoginOutput.js';
 
 /**
  * RaiAcceptService
@@ -174,21 +175,32 @@ export class RaiAcceptService {
    * Retrieve access token with credentials
    * @param username - Username
    * @param password - Password
-   * @returns Access token or null on error
+   * @param cert - Client certificate for mTLS
+   * @param key - Client private key for mTLS
+   * @returns AuthApiLoginOutput object or null on error
    */
-  async retrieveAccessTokenWithCredentials(username: string, password: string): Promise<string | null> {
+  async retrieveAccessTokenWithCredentials(
+    username: string,
+    password: string,
+    cert: string | Buffer,
+    key: string | Buffer
+  ): Promise<AuthApiLoginOutput | null> {
+    // Temporary: Return hardcoded token for testing
+    // return 'temp-test-token-hardcoded-for-testing';
+
+    // TODO: Remove hardcoded token and uncomment below for production
+    
     try {
-      const response = await this.apiClient.token(username, password);
+      const response = await this.apiClient.token(username, password, cert, key);
       if (!response || !response.object) {
         return null;
       }
-      const responseObj = response.object;
-      const accessToken = responseObj.getIdToken();
-      return accessToken || null;
+      return response.object;
     } catch (error) {
       // Re-throw the error so the caller can handle it appropriately
       throw error;
     }
+    
   }
 
   /**
