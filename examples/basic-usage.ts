@@ -10,15 +10,20 @@ async function main(): Promise<void> {
   try {
     console.log('Creating service and authenticating...');
 
-    // Create service instance
-    const client = new RaiAcceptService();
+    // Load mTLS cert and key (from env, files, or secure storage)
+    const cert = process.env.RAIACCEPT_CERT || '';  // Replace with your cert
+    const key = process.env.RAIACCEPT_KEY || '';   // Replace with your key
+
+    // Create service instance with cert and key
+    const client = new RaiAcceptService(null, cert, key);
 
     // Authenticate with your credentials
-    const accessToken = await client.retrieveAccessTokenWithCredentials(
+    const authResult = await client.retrieveAccessTokenWithCredentials(
       'your-username',  // Replace with your actual username
       'your-password'   // Replace with your actual password
     );
 
+    const accessToken = authResult?.accessToken;
     if (!accessToken) {
       throw new Error('Authentication failed');
     }

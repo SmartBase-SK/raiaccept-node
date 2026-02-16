@@ -19,25 +19,25 @@ npm install @smartbase-js/raiaccept-api-client
 ## Quick Start
 
 ```javascript
-import { RaiAcceptAPIApi, RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
+import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 
 // Initialize client
 const httpClient = new HttpClient();
-const apiClient = new RaiAcceptAPIApi(httpClient);
+const service = new RaiAcceptService(httpClient, cert, key);
 
 // Authenticate
-const accessToken = await RaiAcceptService.retrieveAccessTokenWithCredentials(
-  apiClient,
+const authResult = await service.retrieveAccessTokenWithCredentials(
   'username',
   'password'
 );
+const accessToken = authResult?.accessToken;
 
 // Step 1: Create order entry
-const orderResponse = await apiClient.createOrderEntry(accessToken, orderRequest);
+const orderResponse = await service.createOrderEntry(accessToken, orderRequest);
 const orderIdentification = orderResponse.object.getOrderIdentification();
 
 // Step 2: Create payment session for the order
-const paymentSessionResponse = await apiClient.createPaymentSession(
+const paymentSessionResponse = await service.createPaymentSession(
   accessToken,
   orderRequest,
   orderIdentification
@@ -54,11 +54,13 @@ Main API client for interacting with RaiAccept services.
 #### Constructor
 
 ```javascript
-const apiClient = new RaiAcceptAPIApi(httpClient);
+const apiClient = new RaiAcceptAPIApi(httpClient, cert, key);
 ```
 
 **Parameters:**
 - `httpClient` (HttpClient): HTTP client instance for making requests
+- `cert` (string | Buffer): Client certificate for mTLS
+- `key` (string | Buffer): Client private key for mTLS
 
 #### Methods
 
@@ -70,12 +72,32 @@ Authenticate with username and password.
 - `username` (string): Username
 - `password` (string): Password
 
-**Returns:** `Promise<Object>` - Authentication response with access token
+**Returns:** `Promise<ApiResponse<AuthApiLoginOutput>>` - Authentication response with access token, refresh token, and expiration times
 
 **Example:**
 ```javascript
 const response = await apiClient.token('username', 'password');
-const accessToken = response.object.getIdToken();
+const authResult = response.object;
+const accessToken = authResult?.accessToken;
+const refreshToken = authResult?.refreshToken;
+const accessTokenExpiresIn = authResult?.accessTokenExpiresIn;
+const refreshTokenExpiresIn = authResult?.refreshTokenExpiresIn;
+```
+
+---
+
+##### `tokenLogout(token)`
+
+Logout with refresh token. Uses AUTH_URL; cert and key not required.
+
+**Parameters:**
+- `token` (string): Refresh token to logout
+
+**Returns:** `Promise<boolean>` - True if logout successful (HTTP 200), false otherwise
+
+**Example:**
+```javascript
+const success = await apiClient.tokenLogout(refreshToken);
 ```
 
 ---

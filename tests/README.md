@@ -119,6 +119,16 @@ RAIACCEPT_TEST_USERNAME=your_username
 RAIACCEPT_TEST_PASSWORD=your_password
 ```
 
+**Cert/key** use either decoded input from files or base64 encoded strings directly:
+
+```bash
+RAIACCEPT_CERT_PATH=../local_env/decoded.pem
+RAIACCEPT_KEY_PATH=../local_env/decoded.key
+# or
+RAIACCEPT_TEST_CERT_BASE64=<BASE64_ENCODED_CERT_STR>
+RAIACCEPT_TEST_KEY_BASE64=<BASE64_ENCODED_KEY_STR>
+```
+
 ### Running Tests
 
 **Unit Tests (Mocked):**

@@ -1,7 +1,11 @@
 import { ApiException } from '../exceptions/ApiException.js';
 import { InvalidArgumentException } from '../exceptions/InvalidArgumentException.js';
 import { ObjectSerializer } from '../utils/ObjectSerializer.js';
-import { AuthResponse } from '../models/AuthResponse.js';
+import { AuthApiLoginOutput } from '../models/AuthApiLoginOutput.js';
+import { AuthApiLoginInput } from '../models/AuthApiLoginInput.js';
+import { AuthApiLogoutInput } from '../models/AuthApiLogoutInput.js';
+import { AuthApiRefreshInput } from '../models/AuthApiRefreshInput.js';
+import { AuthApiRefreshOutput } from '../models/AuthApiRefreshOutput.js';
 import { CreateOrderEntryResponse } from '../models/CreateOrderEntryResponse.js';
 import { CreatePaymentSessionResponse } from '../models/CreatePaymentSessionResponse.js';
 import { GetOrderDetailsResponse } from '../models/GetOrderDetailsResponse.js';
@@ -22,19 +26,27 @@ export interface ApiResponse<T> {
  * Main API client for RaiAccept payment gateway
  */
 export class RaiAcceptAPIApi {
-  static AUTH_URL = 'https://authenticate.raiaccept.com';
-  static AUTH_FLOW = 'USER_PASSWORD_AUTH';
-  static AUTH_CLIENT_ID = 'kr2gs4117arvbnaperqff5dml';
-  static API_URL = 'https://trapi.raiaccept.com';
+  static AUTH_URL = 'https://auth.raiaccept.com';
+  static API_URL = 'https://api.raiaccept.com';
 
   static ACCEPTED_LANGUAGES = [
     'en', 'de', 'fr', 'cs', 'sk', 'sr', 'al', 'ro', 'pl', 'hr'
   ];
 
   private client: HttpClient;
+  private cert?: string | Buffer;
+  private key?: string | Buffer;
 
-  constructor(client: HttpClient | null = null) {
+  /**
+   * Create a new RaiAcceptAPIApi instance
+   * @param client - HTTP client instance (optional)
+   * @param cert - Client certificate for mTLS (optional, required for API_URL endpoints: createOrderEntry, createPaymentSession, getOrderDetails, getOrderTransactions, getTransactionDetails, refund)
+   * @param key - Client private key for mTLS (optional, required for API_URL endpoints)
+   */
+  constructor(client: HttpClient | null = null, cert?: string | Buffer, key?: string | Buffer) {
     this.client = client || new HttpClient();
+    this.cert = cert;
+    this.key = key;
   }
 
   getAcceptedLanguages(): string[] {
@@ -91,16 +103,6 @@ export class RaiAcceptAPIApi {
     }
   }
 
-  /**
-   * Get authentication request headers
-   * @returns Headers object
-   */
-  static getAuthRequestHeaders(): Record<string, string> {
-    return {
-      'Content-Type': 'application/x-amz-json-1.1',
-      'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth',
-    };
-  }
 
   /**
    * Authenticate with username and password
@@ -108,54 +110,117 @@ export class RaiAcceptAPIApi {
    * @param password - Password
    * @returns Authentication response
    */
-  async token(username: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    const request = this.tokenRequest(
-      RaiAcceptAPIApi.AUTH_FLOW,
-      username,
-      password,
-      RaiAcceptAPIApi.AUTH_CLIENT_ID
-    );
+  async token(username: string, password: string): Promise<ApiResponse<AuthApiLoginOutput>> {
+    const request = this.tokenRequest(username, password);
 
-    return this.processRequest<AuthResponse>(request, AuthResponse, ErrorResponse, true);
+    return this.processRequest<AuthApiLoginOutput>(request, AuthApiLoginOutput, ErrorResponse, true);
   }
 
   /**
    * Create token request
-   * @param authFlow - Authentication flow
    * @param username - Username
    * @param password - Password
-   * @param clientId - Client ID
    * @returns Request object
    */
-  tokenRequest(authFlow: string, username: string, password: string, clientId: string): HttpRequest {
-    if (!authFlow) {
-      throw new InvalidArgumentException('Missing the required parameter $authFlow when calling tokenRequest');
-    }
+  tokenRequest(username: string, password: string): HttpRequest {
     if (!username) {
       throw new InvalidArgumentException('Missing the required parameter $username when calling tokenRequest');
     }
     if (!password) {
       throw new InvalidArgumentException('Missing the required parameter $password when calling tokenRequest');
     }
-    if (!clientId) {
-      throw new InvalidArgumentException('Missing the required parameter $clientId when calling tokenRequest');
-    }
 
-    const formParams = {
-      AuthFlow: authFlow,
-      AuthParameters: {
-        USERNAME: username,
-        PASSWORD: password,
-      },
-      ClientId: clientId,
+    const loginInput = new AuthApiLoginInput();
+    loginInput.username = username;
+    loginInput.password = password;
+
+    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(loginInput));
+    const headers = {
+      'Content-Type': 'application/json',
     };
-
-    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(formParams));
-    const headers = RaiAcceptAPIApi.getAuthRequestHeaders();
 
     return {
       method: 'POST',
-      url: RaiAcceptAPIApi.AUTH_URL,
+      url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/login`,
+      headers: headers,
+      body: httpBody,
+    } as HttpRequest;
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @param refreshToken - Refresh token
+   * @returns Authentication response with new access token and expiration
+   */
+  async tokenRefresh(refreshToken: string): Promise<ApiResponse<AuthApiRefreshOutput>> {
+    const request = this.tokenRefreshRequest(refreshToken);
+    return this.processRequest<AuthApiRefreshOutput>(request, AuthApiRefreshOutput, ErrorResponse, true);
+  }
+
+  /**
+   * Create token refresh request
+   * @param refreshToken - Refresh token
+   * @returns Request object
+   */
+  tokenRefreshRequest(refreshToken: string): HttpRequest {
+    if (!refreshToken) {
+      throw new InvalidArgumentException('Missing the required parameter $refreshToken when calling tokenRefreshRequest');
+    }
+
+    const refreshInput = new AuthApiRefreshInput();
+    refreshInput.refreshToken = refreshToken;
+
+    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(refreshInput));
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    return {
+      method: 'POST',
+      url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/refresh`,
+      headers: headers,
+      body: httpBody,
+    };
+  }
+
+  /**
+   * Logout with token
+   * @param token - Token to logout
+   * @returns True if logout successful (HTTP 200), false otherwise
+   */
+  async tokenLogout(token: string): Promise<boolean> {
+    const request = this.tokenLogoutRequest(token);
+
+    try {
+      const response = await this.client.send(request, true);
+      const statusCode = response.getStatusCode();
+      return statusCode === 200;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Create token logout request
+   * @param token - Token to logout
+   * @returns Request object
+   */
+  tokenLogoutRequest(token: string): HttpRequest {
+    if (!token) {
+      throw new InvalidArgumentException('Missing the required parameter $token when calling tokenLogoutRequest');
+    }
+
+    const logoutInput = new AuthApiLogoutInput();
+    logoutInput.refreshToken = token;
+
+    const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(logoutInput));
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    return {
+      method: 'POST',
+      url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/logout`,
       headers: headers,
       body: httpBody,
     };
@@ -188,6 +253,12 @@ export class RaiAcceptAPIApi {
     if (!createOrderRequest) {
       throw new InvalidArgumentException('Missing the required parameter $createOrderRequest when calling createOrderEntry');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling createOrderEntry (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling createOrderEntry (provide in constructor)');
+    }
 
     const resourcePath = '/orders';
     const headers = {
@@ -203,7 +274,9 @@ export class RaiAcceptAPIApi {
       url: RaiAcceptAPIApi.API_URL + resourcePath,
       headers: headers,
       body: httpBody,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
@@ -243,6 +316,12 @@ export class RaiAcceptAPIApi {
     if (!paymentSessionRequest) {
       throw new InvalidArgumentException('Missing the required parameter $paymentSessionRequest when calling createPaymentSession');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling createPaymentSession (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling createPaymentSession (provide in constructor)');
+    }
 
     const resourcePath = `${RaiAcceptAPIApi.API_URL}/orders/${externalOrderId}/checkout`;
     const headers = {
@@ -258,7 +337,9 @@ export class RaiAcceptAPIApi {
       url: resourcePath,
       headers: headers,
       body: httpBody,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
@@ -288,6 +369,12 @@ export class RaiAcceptAPIApi {
     if (!accessToken) {
       throw new InvalidArgumentException('Missing the required parameter $accessToken when calling getOrderDetailsRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling getOrderDetails (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling getOrderDetails (provide in constructor)');
+    }
 
     const encodedPaymentId = ObjectSerializer.toPathValue(paymentId);
     const resourcePath = `${RaiAcceptAPIApi.API_URL}/orders/${encodedPaymentId}`;
@@ -301,7 +388,9 @@ export class RaiAcceptAPIApi {
       method: 'GET',
       url: resourcePath,
       headers: headers,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
@@ -337,6 +426,12 @@ export class RaiAcceptAPIApi {
     if (!accessToken) {
       throw new InvalidArgumentException('Missing the required parameter $accessToken when calling getTransactionDetailsRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling getTransactionDetails (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling getTransactionDetails (provide in constructor)');
+    }
 
     const encodedOrderId = ObjectSerializer.toPathValue(orderId);
     const encodedTransactionId = ObjectSerializer.toPathValue(transactionId);
@@ -351,7 +446,9 @@ export class RaiAcceptAPIApi {
       method: 'GET',
       url: resourcePath,
       headers: headers,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
@@ -381,6 +478,12 @@ export class RaiAcceptAPIApi {
     if (!accessToken) {
       throw new InvalidArgumentException('Missing the required parameter $accessToken when calling getOrderTransactionsRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling getOrderTransactions (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling getOrderTransactions (provide in constructor)');
+    }
 
     const encodedOrderId = ObjectSerializer.toPathValue(orderId);
     const resourcePath = `${RaiAcceptAPIApi.API_URL}/orders/${encodedOrderId}/transactions`;
@@ -394,7 +497,9 @@ export class RaiAcceptAPIApi {
       method: 'GET',
       url: resourcePath,
       headers: headers,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
@@ -436,6 +541,12 @@ export class RaiAcceptAPIApi {
     if (!requestObj) {
       throw new InvalidArgumentException('Missing the required parameter $requestObj when calling getRefundRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling refund (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling refund (provide in constructor)');
+    }
 
     const encodedOrderId = ObjectSerializer.toPathValue(orderId);
     const encodedTransactionId = ObjectSerializer.toPathValue(transactionId);
@@ -454,6 +565,8 @@ export class RaiAcceptAPIApi {
       url: resourcePath,
       headers: headers,
       body: httpBody,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 }

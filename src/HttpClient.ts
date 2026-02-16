@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import https from 'https';
 
 export interface Logger {
   log(message: string, data?: any): void;
@@ -15,6 +16,8 @@ export interface HttpRequest {
   url: string;
   headers?: Record<string, string>;
   body?: string;
+  cert?: string | Buffer;
+  key?: string | Buffer;
 }
 
 export interface HttpResponse {
@@ -51,6 +54,15 @@ export class HttpClient {
       validateStatus: () => true, // Don't throw on any status
     };
 
+    // Add mTLS certificate and key
+    if (request.cert && request.key) {
+      const httpsAgent = new https.Agent({
+        cert: request.cert,
+        key: request.key,
+      });
+      axiosConfig.httpsAgent = httpsAgent;
+    }
+
     if (this.logger && !omitLogging) {
       this.logger.log('Request:', this._sanitizeForLog(request));
     }
@@ -79,19 +91,43 @@ export class HttpClient {
     }
   }
 
+  private static readonly SENSITIVE_BODY_KEYS = ['cert', 'key', 'username', 'password'];
+
   /**
-   * Sanitize request for logging (hide sensitive headers)
+   * Sanitize request for logging (hide sensitive headers and body fields)
    * @param request - Request object
    * @returns Sanitized request
    */
   private _sanitizeForLog(request: HttpRequest): HttpRequest {
     const sanitized: HttpRequest = { ...request };
+
+    // Hide sensitive headers
     if (sanitized.headers) {
       sanitized.headers = { ...sanitized.headers };
       if (sanitized.headers.Authorization) {
         sanitized.headers.Authorization = 'HIDDEN';
       }
     }
+
+    // Hide cert and key
+    if (sanitized.cert) sanitized.cert = 'HIDDEN';
+    if (sanitized.key) sanitized.key = 'HIDDEN';
+
+    // Hide sensitive fields in request body (username, password, cert, key)
+    if (sanitized.body) {
+      try {
+        const parsed = JSON.parse(sanitized.body);
+        if (typeof parsed === 'object' && parsed !== null) {
+          for (const key of HttpClient.SENSITIVE_BODY_KEYS) {
+            if (key in parsed) parsed[key] = 'HIDDEN';
+          }
+          sanitized.body = JSON.stringify(parsed);
+        }
+      } catch {
+        // Not JSON, leave body as-is
+      }
+    }
+
     return sanitized;
   }
 }

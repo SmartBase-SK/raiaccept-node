@@ -42,11 +42,13 @@ npm install
 
 2. Update credentials in the examples:
 ```javascript
-const accessToken = await RaiAcceptService.retrieveAccessTokenWithCredentials(
-  apiClient,
+const authResult = await service.retrieveAccessTokenWithCredentials(
   'your-username',  // <- Replace with your credentials
-  'your-password'   // <- Replace with your credentials
+  'your-password',  // <- Replace with your credentials
+  cert,             // <- Client certificate for mTLS
+  key               // <- Client private key for mTLS
 );
+const accessToken = authResult?.accessToken;
 ```
 
 3. Run the examples:
@@ -67,10 +69,13 @@ const app = express();
 app.post('/api/create-payment', async (req, res) => {
   // Create service and authenticate
   const service = new RaiAcceptService();
-  const accessToken = await service.retrieveAccessTokenWithCredentials(
+  const authResult = await service.retrieveAccessTokenWithCredentials(
     'your-username',  // Replace with your actual credentials
-    'your-password'   // Replace with your actual credentials
+    'your-password', // Replace with your actual credentials
+    cert,            // Client certificate for mTLS
+    key              // Client private key for mTLS
   );
+  const accessToken = authResult?.accessToken;
 
   // Step 1: Create order entry
   const orderResponse = await service.createOrderEntry(accessToken, req.body);
@@ -99,10 +104,13 @@ import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 export async function createPayment(orderData) {
   // Create service and authenticate
   const service = new RaiAcceptService();
-  const accessToken = await service.retrieveAccessTokenWithCredentials(
+  const authResult = await service.retrieveAccessTokenWithCredentials(
     'your-username',  // Replace with your actual credentials
-    'your-password'   // Replace with your actual credentials
+    'your-password', // Replace with your actual credentials
+    cert,            // Client certificate for mTLS
+    key              // Client private key for mTLS
   );
+  const accessToken = authResult?.accessToken;
 
   // Step 1: Create order entry
   const orderResponse = await service.createOrderEntry(accessToken, orderData);
@@ -131,10 +139,13 @@ import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
 export const handler = async (event) => {
   // Create service and authenticate
   const service = new RaiAcceptService();
-  const accessToken = await service.retrieveAccessTokenWithCredentials(
+  const authResult = await service.retrieveAccessTokenWithCredentials(
     'your-username',  // Replace with your actual credentials
-    'your-password'   // Replace with your actual credentials
+    'your-password', // Replace with your actual credentials
+    cert,            // Client certificate for mTLS
+    key              // Client private key for mTLS
   );
+  const accessToken = authResult?.accessToken;
 
   const orderData = JSON.parse(event.body);
 

@@ -39,14 +39,22 @@ const client = new RaiAcceptService(httpClient);
 ### 3. Authenticate
 
 ```javascript
-const accessToken = await client.retrieveAccessTokenWithCredentials(
+const authResult = await client.retrieveAccessTokenWithCredentials(
   'your-username',
-  'your-password'
+  'your-password',
+  cert,  // Client certificate for mTLS
+  key    // Client private key for mTLS
 );
 
-if (!accessToken) {
+if (!authResult) {
   throw new Error('Authentication failed');
 }
+
+const accessToken = authResult.accessToken;
+// You can also access:
+// - authResult.accessTokenExpiresIn
+// - authResult.refreshToken
+// - authResult.refreshTokenExpiresIn
 ```
 
 ### 4. Create Your First Payment
