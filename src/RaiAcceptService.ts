@@ -7,8 +7,8 @@ import { GetOrderDetailsResponse } from './models/GetOrderDetailsResponse.js';
 import { GetOrderTransactionsResponse } from './models/GetOrderTransactionsResponse.js';
 import { GetTransactionDetailsResponse } from './models/GetTransactionDetailsResponse.js';
 import { RefundResponse } from './models/RefundResponse.js';
-import { AuthResponse } from './models/AuthResponse.js';
 import { AuthApiLoginOutput } from './models/AuthApiLoginOutput.js';
+import { AuthApiRefreshOutput } from './models/AuthApiRefreshOutput.js';
 
 /**
  * RaiAcceptService
@@ -24,13 +24,19 @@ export class RaiAcceptService {
   static STATUS_ABANDONED = 'ABANDONED';
 
   private apiClient: RaiAcceptAPIApi;
+  private cert?: string | Buffer;
+  private key?: string | Buffer;
 
   /**
    * Create a new RaiAcceptService instance
    * @param httpClient - HTTP client instance (optional)
+   * @param cert - Client certificate for mTLS (optional, required for retrieveAccessTokenWithCredentials)
+   * @param key - Client private key for mTLS (optional, required for retrieveAccessTokenWithCredentials)
    */
-  constructor(httpClient: HttpClient | null = null) {
-    this.apiClient = new RaiAcceptAPIApi(httpClient);
+  constructor(httpClient: HttpClient | null = null, cert?: string | Buffer, key?: string | Buffer) {
+    this.apiClient = new RaiAcceptAPIApi(httpClient, cert, key);
+    this.cert = cert;
+    this.key = key;
   }
 
   /**
@@ -175,23 +181,14 @@ export class RaiAcceptService {
    * Retrieve access token with credentials
    * @param username - Username
    * @param password - Password
-   * @param cert - Client certificate for mTLS
-   * @param key - Client private key for mTLS
    * @returns AuthApiLoginOutput object or null on error
    */
   async retrieveAccessTokenWithCredentials(
     username: string,
-    password: string,
-    cert: string | Buffer,
-    key: string | Buffer
+    password: string
   ): Promise<AuthApiLoginOutput | null> {
-    // Temporary: Return hardcoded token for testing
-    // return 'temp-test-token-hardcoded-for-testing';
-
-    // TODO: Remove hardcoded token and uncomment below for production
-    
     try {
-      const response = await this.apiClient.token(username, password, cert, key);
+      const response = await this.apiClient.token(username, password);
       if (!response || !response.object) {
         return null;
       }
@@ -200,7 +197,25 @@ export class RaiAcceptService {
       // Re-throw the error so the caller can handle it appropriately
       throw error;
     }
-    
+
+  }
+
+  /**
+   * Logout with token
+   * @param token - Token to logout (refresh token)
+   * @returns True if logout successful (HTTP 200), false otherwise
+   */
+  async tokenLogout(token: string): Promise<boolean> {
+    return await this.apiClient.tokenLogout(token);
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @param refreshToken - Refresh token
+   * @returns Authentication response with new access token and expiration
+   */
+  async tokenRefresh(refreshToken: string): Promise<ApiResponse<AuthApiRefreshOutput>> {
+    return await this.apiClient.tokenRefresh(refreshToken);
   }
 
   /**

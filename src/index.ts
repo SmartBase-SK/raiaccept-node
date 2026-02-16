@@ -21,10 +21,8 @@ export { InvalidArgumentException } from './exceptions/InvalidArgumentException.
 
 // Models
 export { Address } from './models/Address.js';
-export { AuthenticationResult } from './models/AuthenticationResult.js';
-export { AuthResponse } from './models/AuthResponse.js';
+export { AuthApiLoginOutput } from './models/AuthApiLoginOutput.js';
 export { Card } from './models/Card.js';
-export { ChallengeParameters } from './models/ChallengeParameters.js';
 export { Consumer } from './models/Consumer.js';
 export { CreateOrderEntryRequest } from './models/CreateOrderEntryRequest.js';
 export { CreateOrderEntryResponse } from './models/CreateOrderEntryResponse.js';
