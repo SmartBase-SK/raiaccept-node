@@ -40,8 +40,8 @@ export class RaiAcceptAPIApi {
   /**
    * Create a new RaiAcceptAPIApi instance
    * @param client - HTTP client instance (optional)
-   * @param cert - Client certificate for mTLS (optional, required for API_URL endpoints: createOrderEntry, createPaymentSession, getOrderDetails, getOrderTransactions, getTransactionDetails, refund)
-   * @param key - Client private key for mTLS (optional, required for API_URL endpoints)
+   * @param cert - Client certificate for mTLS
+   * @param key - Client private key for mTLS
    */
   constructor(client: HttpClient | null = null, cert?: string | Buffer, key?: string | Buffer) {
     this.client = client || new HttpClient();
@@ -129,6 +129,12 @@ export class RaiAcceptAPIApi {
     if (!password) {
       throw new InvalidArgumentException('Missing the required parameter $password when calling tokenRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling token (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling token (provide in constructor)');
+    }
 
     const loginInput = new AuthApiLoginInput();
     loginInput.username = username;
@@ -144,6 +150,8 @@ export class RaiAcceptAPIApi {
       url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/login`,
       headers: headers,
       body: httpBody,
+      cert: this.cert,
+      key: this.key,
     } as HttpRequest;
   }
 
@@ -166,6 +174,12 @@ export class RaiAcceptAPIApi {
     if (!refreshToken) {
       throw new InvalidArgumentException('Missing the required parameter $refreshToken when calling tokenRefreshRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling tokenRefresh (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling tokenRefresh (provide in constructor)');
+    }
 
     const refreshInput = new AuthApiRefreshInput();
     refreshInput.refreshToken = refreshToken;
@@ -180,7 +194,9 @@ export class RaiAcceptAPIApi {
       url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/refresh`,
       headers: headers,
       body: httpBody,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
@@ -209,6 +225,12 @@ export class RaiAcceptAPIApi {
     if (!token) {
       throw new InvalidArgumentException('Missing the required parameter $token when calling tokenLogoutRequest');
     }
+    if (!this.cert) {
+      throw new InvalidArgumentException('Missing the required parameter $cert when calling tokenLogout (provide in constructor)');
+    }
+    if (!this.key) {
+      throw new InvalidArgumentException('Missing the required parameter $key when calling tokenLogout (provide in constructor)');
+    }
 
     const logoutInput = new AuthApiLogoutInput();
     logoutInput.refreshToken = token;
@@ -223,7 +245,9 @@ export class RaiAcceptAPIApi {
       url: `${RaiAcceptAPIApi.AUTH_URL}/auth/api/logout`,
       headers: headers,
       body: httpBody,
-    };
+      cert: this.cert,
+      key: this.key,
+    } as HttpRequest;
   }
 
   /**
