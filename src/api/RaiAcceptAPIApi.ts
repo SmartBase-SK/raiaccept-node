@@ -26,7 +26,7 @@ export interface ApiResponse<T> {
  * Main API client for RaiAccept payment gateway
  */
 export class RaiAcceptAPIApi {
-  static AUTH_URL = 'https://auth.raiaccept.com';
+  static AUTH_URL = 'https://api.raiaccept.com';
   static API_URL = 'https://api.raiaccept.com';
 
   static ACCEPTED_LANGUAGES = [
