@@ -60,7 +60,15 @@ describe('RaiAcceptService Integration Tests', () => {
 
       // Step 1: Authenticate to get access token
       console.log('[Step 1] Authenticating...')
-      const authResult = await realService.retrieveAccessTokenWithCredentials(username, password)
+      const integrationContext = {
+        type: 'CODE',
+        data: {
+          name: 'raiaccept-shopify',
+          version: '1.0.0',
+          vendor: 'Smartbase s.r.o.',
+        },
+      }
+      const authResult = await realService.retrieveAccessTokenWithCredentials(username, password, integrationContext)
       const accessToken = authResult?.accessToken
       expect(accessToken).toBeTruthy()
       expect(typeof accessToken).toBe('string')

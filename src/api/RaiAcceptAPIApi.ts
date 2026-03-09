@@ -2,7 +2,7 @@ import { ApiException } from '../exceptions/ApiException.js';
 import { InvalidArgumentException } from '../exceptions/InvalidArgumentException.js';
 import { ObjectSerializer } from '../utils/ObjectSerializer.js';
 import { AuthApiLoginOutput } from '../models/AuthApiLoginOutput.js';
-import { AuthApiLoginInput } from '../models/AuthApiLoginInput.js';
+import { AuthApiLoginInput, type IntegrationContext } from '../models/AuthApiLoginInput.js';
 import { AuthApiLogoutInput } from '../models/AuthApiLogoutInput.js';
 import { AuthApiRefreshInput } from '../models/AuthApiRefreshInput.js';
 import { AuthApiRefreshOutput } from '../models/AuthApiRefreshOutput.js';
@@ -108,10 +108,15 @@ export class RaiAcceptAPIApi {
    * Authenticate with username and password
    * @param username - Username
    * @param password - Password
+   * @param integrationContext - Integration context (type, name, version, vendor)
    * @returns Authentication response
    */
-  async token(username: string, password: string): Promise<ApiResponse<AuthApiLoginOutput>> {
-    const request = this.tokenRequest(username, password);
+  async token(
+    username: string,
+    password: string,
+    integrationContext: IntegrationContext
+  ): Promise<ApiResponse<AuthApiLoginOutput>> {
+    const request = this.tokenRequest(username, password, integrationContext);
 
     return this.processRequest<AuthApiLoginOutput>(request, AuthApiLoginOutput, ErrorResponse, true);
   }
@@ -120,14 +125,22 @@ export class RaiAcceptAPIApi {
    * Create token request
    * @param username - Username
    * @param password - Password
+   * @param integrationContext - Integration context (type, name, version, vendor)
    * @returns Request object
    */
-  tokenRequest(username: string, password: string): HttpRequest {
+  tokenRequest(
+    username: string,
+    password: string,
+    integrationContext: IntegrationContext
+  ): HttpRequest {
     if (!username) {
       throw new InvalidArgumentException('Missing the required parameter $username when calling tokenRequest');
     }
     if (!password) {
       throw new InvalidArgumentException('Missing the required parameter $password when calling tokenRequest');
+    }
+    if (!integrationContext) {
+      throw new InvalidArgumentException('Missing the required parameter $integrationContext when calling tokenRequest');
     }
     if (!this.cert) {
       throw new InvalidArgumentException('Missing the required parameter $cert when calling token (provide in constructor)');
@@ -139,6 +152,7 @@ export class RaiAcceptAPIApi {
     const loginInput = new AuthApiLoginInput();
     loginInput.username = username;
     loginInput.password = password;
+    loginInput.integrationContext = integrationContext;
 
     const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(loginInput));
     const headers = {

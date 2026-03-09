@@ -18,9 +18,18 @@ async function main(): Promise<void> {
     const client = new RaiAcceptService(null, cert, key);
 
     // Authenticate with your credentials
+    const integrationContext = {
+      type: 'CODE' as const,
+      data: {
+        name: 'app name',
+        version: '1.0.0',
+        vendor: 'vendor name',
+      },
+    };
     const authResult = await client.retrieveAccessTokenWithCredentials(
       'your-username',  // Replace with your actual username
-      'your-password'   // Replace with your actual password
+      'your-password',  // Replace with your actual password
+      integrationContext
     );
 
     const accessToken = authResult?.accessToken;

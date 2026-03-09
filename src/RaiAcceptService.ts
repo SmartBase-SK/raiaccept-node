@@ -8,6 +8,7 @@ import { GetOrderTransactionsResponse } from './models/GetOrderTransactionsRespo
 import { GetTransactionDetailsResponse } from './models/GetTransactionDetailsResponse.js';
 import { RefundResponse } from './models/RefundResponse.js';
 import { AuthApiLoginOutput } from './models/AuthApiLoginOutput.js';
+import type { IntegrationContext } from './models/AuthApiLoginInput.js';
 import { AuthApiRefreshOutput } from './models/AuthApiRefreshOutput.js';
 
 /**
@@ -181,14 +182,16 @@ export class RaiAcceptService {
    * Retrieve access token with credentials
    * @param username - Username
    * @param password - Password
+   * @param integrationContext - Integration context (type, name, version, vendor)
    * @returns AuthApiLoginOutput object or null on error
    */
   async retrieveAccessTokenWithCredentials(
     username: string,
-    password: string
+    password: string,
+    integrationContext: IntegrationContext
   ): Promise<AuthApiLoginOutput | null> {
     try {
-      const response = await this.apiClient.token(username, password);
+      const response = await this.apiClient.token(username, password, integrationContext);
       if (!response || !response.object) {
         return null;
       }
