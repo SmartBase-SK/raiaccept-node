@@ -60,7 +60,15 @@ describe('RaiAcceptService Integration Tests', () => {
 
       // Step 1: Authenticate to get access token
       console.log('[Step 1] Authenticating...')
-      const authResult = await realService.retrieveAccessTokenWithCredentials(username, password)
+      const integrationContext = {
+        type: 'CODE',
+        data: {
+          name: 'raiaccept-shopify-integration-test',
+          version: '1.0.0',
+          vendor: 'Smartbase s.r.o.',
+        },
+      }
+      const authResult = await realService.retrieveAccessTokenWithCredentials(username, password, integrationContext)
       const accessToken = authResult?.accessToken
       expect(accessToken).toBeTruthy()
       expect(typeof accessToken).toBe('string')
@@ -176,7 +184,7 @@ describe('RaiAcceptService Integration Tests', () => {
       console.log('[Step 6] Refreshing token...')
       const refreshToken = authResult?.refreshToken
       expect(refreshToken).toBeTruthy()
-      const refreshResult = await realService.tokenRefresh(refreshToken)
+      const refreshResult = await realService.tokenRefresh(refreshToken, integrationContext)
       expect(refreshResult).toBeDefined()
       expect(refreshResult).toHaveProperty('object')
       const refreshOutput = refreshResult.object

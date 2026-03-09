@@ -22,6 +22,10 @@ export { InvalidArgumentException } from './exceptions/InvalidArgumentException.
 // Models
 export { Address } from './models/Address.js';
 export { AuthApiLoginOutput } from './models/AuthApiLoginOutput.js';
+export {
+  type IntegrationContext,
+  type IntegrationContextData,
+} from './models/AuthApiLoginInput.js';
 export { Card } from './models/Card.js';
 export { Consumer } from './models/Consumer.js';
 export { CreateOrderEntryRequest } from './models/CreateOrderEntryRequest.js';
