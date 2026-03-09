@@ -215,10 +215,14 @@ export class RaiAcceptService {
   /**
    * Refresh access token using refresh token
    * @param refreshToken - Refresh token
+   * @param integrationContext - Integration context (type, name, version, vendor) - must be provided by the caller
    * @returns Authentication response with new access token and expiration
    */
-  async tokenRefresh(refreshToken: string): Promise<ApiResponse<AuthApiRefreshOutput>> {
-    return await this.apiClient.tokenRefresh(refreshToken);
+  async tokenRefresh(
+    refreshToken: string,
+    integrationContext: IntegrationContext
+  ): Promise<ApiResponse<AuthApiRefreshOutput>> {
+    return await this.apiClient.tokenRefresh(refreshToken, integrationContext);
   }
 
   /**

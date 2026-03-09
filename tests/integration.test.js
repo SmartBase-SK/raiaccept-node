@@ -184,7 +184,7 @@ describe('RaiAcceptService Integration Tests', () => {
       console.log('[Step 6] Refreshing token...')
       const refreshToken = authResult?.refreshToken
       expect(refreshToken).toBeTruthy()
-      const refreshResult = await realService.tokenRefresh(refreshToken)
+      const refreshResult = await realService.tokenRefresh(refreshToken, integrationContext)
       expect(refreshResult).toBeDefined()
       expect(refreshResult).toHaveProperty('object')
       const refreshOutput = refreshResult.object

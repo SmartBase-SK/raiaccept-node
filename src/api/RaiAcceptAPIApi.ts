@@ -108,7 +108,7 @@ export class RaiAcceptAPIApi {
    * Authenticate with username and password
    * @param username - Username
    * @param password - Password
-   * @param integrationContext - Integration context (type, name, version, vendor)
+   * @param integrationContext - Integration context (type, name, version, vendor) - must be provided by the caller
    * @returns Authentication response
    */
   async token(
@@ -125,7 +125,7 @@ export class RaiAcceptAPIApi {
    * Create token request
    * @param username - Username
    * @param password - Password
-   * @param integrationContext - Integration context (type, name, version, vendor)
+   * @param integrationContext - Integration context (type, name, version, vendor) - must be provided by the caller
    * @returns Request object
    */
   tokenRequest(
@@ -172,21 +172,32 @@ export class RaiAcceptAPIApi {
   /**
    * Refresh access token using refresh token
    * @param refreshToken - Refresh token
+   * @param integrationContext - Integration context (type, name, version, vendor) - must be provided by the caller
    * @returns Authentication response with new access token and expiration
    */
-  async tokenRefresh(refreshToken: string): Promise<ApiResponse<AuthApiRefreshOutput>> {
-    const request = this.tokenRefreshRequest(refreshToken);
+  async tokenRefresh(
+    refreshToken: string,
+    integrationContext: IntegrationContext
+  ): Promise<ApiResponse<AuthApiRefreshOutput>> {
+    const request = this.tokenRefreshRequest(refreshToken, integrationContext);
     return this.processRequest<AuthApiRefreshOutput>(request, AuthApiRefreshOutput, ErrorResponse, true);
   }
 
   /**
    * Create token refresh request
    * @param refreshToken - Refresh token
+   * @param integrationContext - Integration context (type, name, version, vendor) - must be provided by the caller
    * @returns Request object
    */
-  tokenRefreshRequest(refreshToken: string): HttpRequest {
+  tokenRefreshRequest(
+    refreshToken: string,
+    integrationContext: IntegrationContext
+  ): HttpRequest {
     if (!refreshToken) {
       throw new InvalidArgumentException('Missing the required parameter $refreshToken when calling tokenRefreshRequest');
+    }
+    if (!integrationContext) {
+      throw new InvalidArgumentException('Missing the required parameter $integrationContext when calling tokenRefreshRequest');
     }
     if (!this.cert) {
       throw new InvalidArgumentException('Missing the required parameter $cert when calling tokenRefresh (provide in constructor)');
@@ -197,6 +208,7 @@ export class RaiAcceptAPIApi {
 
     const refreshInput = new AuthApiRefreshInput();
     refreshInput.refreshToken = refreshToken;
+    refreshInput.integrationContext = integrationContext;
 
     const httpBody = JSON.stringify(ObjectSerializer.sanitizeForSerialization(refreshInput));
     const headers = {
