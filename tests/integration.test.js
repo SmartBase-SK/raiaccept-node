@@ -63,7 +63,7 @@ describe('RaiAcceptService Integration Tests', () => {
       const integrationContext = {
         type: 'CODE',
         data: {
-          name: 'raiaccept-shopify',
+          name: 'raiaccept-shopify-integration-test',
           version: '1.0.0',
           vendor: 'Smartbase s.r.o.',
         },
