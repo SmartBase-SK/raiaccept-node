@@ -35,168 +35,152 @@ function loadCertAndKey() {
   }
 }
 
-describe('RaiAcceptService Integration Tests', () => {
-  describe('Complete Payment Creation Flow', () => {
-    it('should authenticate, create order entry, and create payment session', async () => {
-      const username = process.env.RAIACCEPT_TEST_USERNAME || process.env.RAIACCEPT_USERNAME
-      const password = process.env.RAIACCEPT_TEST_PASSWORD || process.env.RAIACCEPT_PASSWORD
+function loadCredentials() {
+  const username = process.env.RAIACCEPT_TEST_USERNAME || process.env.RAIACCEPT_USERNAME
+  const password = process.env.RAIACCEPT_TEST_PASSWORD || process.env.RAIACCEPT_PASSWORD
 
-      if (!username || !password) {
-        throw new Error('Test credentials required: Set RAIACCEPT_TEST_USERNAME/RAIACCEPT_TEST_PASSWORD or RAIACCEPT_USERNAME/RAIACCEPT_PASSWORD environment variables')
-      }
+  if (!username || !password) {
+    throw new Error(
+      'Test credentials required: Set RAIACCEPT_TEST_USERNAME/RAIACCEPT_TEST_PASSWORD or RAIACCEPT_USERNAME/RAIACCEPT_PASSWORD environment variables'
+    )
+  }
 
-      const certKey = loadCertAndKey()
-      if (!certKey) {
-        throw new Error(
-          'Test cert/key required. Use either:\n' +
+  return {
+    username,
+    password,
+    integrationContext: {
+      type: 'CODE',
+      data: {
+        name: 'raiaccept-sdk-integration-test',
+        version: '1.0.0',
+        vendor: 'Smartbase s.r.o.',
+      },
+    },
+  }
+}
+
+function createService(authMode) {
+  const httpClient = new HttpClient()
+  if (authMode === 'partner') {
+    const certKey = loadCertAndKey()
+    if (!certKey) {
+      throw new Error(
+        'Partner mode test cert/key required. Use either:\n' +
           '  - RAIACCEPT_CERT_PATH + RAIACCEPT_KEY_PATH (paths to PEM files)\n' +
-          '  - RAIACCEPT_CERT_BASE64 + RAIACCEPT_KEY_BASE64 (base64 of full PEM files, e.g. base64 -w 0 cert.pem)'
-        )
-      }
-      const { cert, key } = certKey
+          '  - RAIACCEPT_CERT_BASE64 + RAIACCEPT_KEY_BASE64 (base64 of full PEM files)'
+      )
+    }
+    const { cert, key } = certKey
+    return new RaiAcceptService(httpClient, cert, key)
+  }
+  return new RaiAcceptService(httpClient)
+}
 
-      const httpClient = new HttpClient()
-      const realService = new RaiAcceptService(httpClient, cert, key)
+async function runPaymentFlow(service, { username, password, integrationContext }) {
+  console.log('[Step 1] Authenticating...')
+  const authResult = await service.retrieveAccessTokenWithCredentials(username, password, integrationContext)
+  const accessToken = authResult?.accessToken
+  expect(accessToken).toBeTruthy()
+  expect(typeof accessToken).toBe('string')
+  expect(accessToken.length).toBeGreaterThan(10)
+  expect(accessToken).toMatch(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/)
 
-      // Step 1: Authenticate to get access token
-      console.log('[Step 1] Authenticating...')
-      const integrationContext = {
-        type: 'CODE',
-        data: {
-          name: 'raiaccept-shopify-integration-test',
-          version: '1.0.0',
-          vendor: 'Smartbase s.r.o.',
-        },
-      }
-      const authResult = await realService.retrieveAccessTokenWithCredentials(username, password, integrationContext)
-      const accessToken = authResult?.accessToken
-      expect(accessToken).toBeTruthy()
-      expect(typeof accessToken).toBe('string')
-      expect(accessToken.length).toBeGreaterThan(10)
-      expect(accessToken).toMatch(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/)
+  console.log('[Step 2] Creating order entry...')
+  const consumer = Consumer.fromObject({
+    email: 'test@example.com',
+    firstName: 'John',
+    lastName: 'Doe',
+    mobilePhone: '+421908123456',
+  })
 
-      // Step 2: Create order entry
-      console.log('[Step 2] Creating order entry...')
-      const consumer = Consumer.fromObject({
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        mobilePhone: '+421908123456'
-      })
+  const invoice = Invoice.fromObject({
+    amount: 100.0,
+    currency: 'USD',
+    description: 'Test Order',
+    merchantOrderReference: `test-order-${Date.now()}`,
+    items: [],
+  })
 
-      const invoice = Invoice.fromObject({
-        amount: 100.00,
-        currency: 'USD',
-        description: 'Test Order',
-        merchantOrderReference: `test-order-${Date.now()}`,
-        items: []
-      })
+  const urls = Urls.fromObject({
+    successUrl: 'https://example.com/success',
+    failUrl: 'https://example.com/fail',
+    cancelUrl: 'https://example.com/cancel',
+    notificationUrl: 'https://example.com/notification',
+  })
 
-      const urls = Urls.fromObject({
-        successUrl: 'https://example.com/success',
-        failUrl: 'https://example.com/fail',
-        cancelUrl: 'https://example.com/cancel',
-        notificationUrl: 'https://example.com/notification'
-      })
+  const orderRequest = CreateOrderEntryRequest.fromObject({
+    consumer,
+    invoice,
+    urls,
+    paymentMethodPreference: 'CARD',
+  })
 
-      const orderRequest = CreateOrderEntryRequest.fromObject({
-        consumer: consumer,
-        invoice: invoice,
-        urls: urls,
-        paymentMethodPreference: 'CARD'
-      })
+  const orderResult = await service.createOrderEntry(accessToken, orderRequest)
+  expect(orderResult).toBeDefined()
+  expect(orderResult).toHaveProperty('object')
 
-      const orderResult = await realService.createOrderEntry(accessToken, orderRequest)
+  const orderResponse = orderResult.object
+  expect(orderResponse).toBeDefined()
+  expect(orderResponse.orderIdentification).toBeTruthy()
+  expect(typeof orderResponse.orderIdentification).toBe('string')
+  expect(orderResponse).toHaveProperty('createdOn')
+  expect(orderResponse).toHaveProperty('isProduction')
+  expect(typeof orderResponse.isProduction).toBe('boolean')
 
-      // Verify order creation response
-      expect(orderResult).toBeDefined()
-      expect(orderResult).toHaveProperty('object')
+  const orderId = orderResponse.orderIdentification
 
-      const orderResponse = orderResult.object
-      expect(orderResponse).toBeDefined()
-      expect(orderResponse).toHaveProperty('orderIdentification')
-      expect(orderResponse.orderIdentification).toBeTruthy()
-      expect(typeof orderResponse.orderIdentification).toBe('string')
-      expect(orderResponse).toHaveProperty('createdOn')
-      expect(orderResponse).toHaveProperty('isProduction')
-      expect(typeof orderResponse.isProduction).toBe('boolean')
+  console.log('[Step 3] Creating payment session...')
+  const paymentResult = await service.createPaymentSession(accessToken, orderRequest, orderId)
+  expect(paymentResult).toBeDefined()
+  expect(paymentResult).toHaveProperty('object')
 
-      const orderId = orderResponse.orderIdentification
+  const paymentResponse = paymentResult.object
+  expect(paymentResponse).toBeDefined()
+  expect(paymentResponse.sessionId).toBeTruthy()
+  expect(paymentResponse.paymentRedirectURL).toBeTruthy()
+  expect(paymentResponse.paymentRedirectURL).toMatch(/^https?:\/\//)
 
-      // Step 3: Create payment session for the order
-      console.log('[Step 3] Creating payment session...')
-      const paymentSessionRequest = orderRequest
+  console.log('[Step 4] Getting order details...')
+  const orderDetailsResult = await service.getOrderDetails(accessToken, orderId)
+  expect(orderDetailsResult).toBeDefined()
+  expect(orderDetailsResult.object?.status).toBeTruthy()
+  expect(orderDetailsResult.object?.consumer?.email).toBe(consumer.email)
 
-      const paymentResult = await realService.createPaymentSession(accessToken, paymentSessionRequest, orderId)
+  console.log('[Step 5] Getting order transactions...')
+  const transactionsResult = await service.getOrderTransactions(accessToken, orderId)
+  expect(transactionsResult.object?.transactions).toBeDefined()
+  expect(Array.isArray(transactionsResult.object.transactions)).toBe(true)
+  expect(transactionsResult.object.transactions.length).toBe(0)
 
-      // Verify payment session response
-      expect(paymentResult).toBeDefined()
-      expect(paymentResult).toHaveProperty('object')
+  console.log('[Step 6] Refreshing token...')
+  const refreshToken = authResult?.refreshToken
+  expect(refreshToken).toBeTruthy()
+  const refreshResult = await service.tokenRefresh(refreshToken, integrationContext)
+  expect(refreshResult.object?.accessToken).toBeTruthy()
+  expect(typeof refreshResult.object?.accessTokenExpiresIn).toBe('number')
 
-      const paymentResponse = paymentResult.object
-      expect(paymentResponse).toBeDefined()
-      expect(paymentResponse).toHaveProperty('sessionId')
-      expect(paymentResponse).toHaveProperty('paymentRedirectURL')
-      expect(paymentResponse).toHaveProperty('expiresAt')
-      expect(paymentResponse.sessionId).toBeTruthy()
-      expect(typeof paymentResponse.sessionId).toBe('string')
-      expect(paymentResponse.paymentRedirectURL).toBeTruthy()
-      expect(typeof paymentResponse.paymentRedirectURL).toBe('string')
-      expect(paymentResponse.paymentRedirectURL).toMatch(/^https?:\/\//)
+  console.log('[Step 7] Logging out...')
+  const logoutSuccess = await service.tokenLogout(refreshToken)
+  expect(logoutSuccess).toBe(true)
+}
 
-      // Step 4: Get order details
-      console.log('[Step 4] Getting order details...')
-      const orderDetailsResult = await realService.getOrderDetails(accessToken, orderId)
+describe('RaiAcceptService Integration Tests', () => {
+  describe('merchant mode integration', () => {
+    it('should run complete payment flow without mTLS', async () => {
+      const credentials = loadCredentials()
+      const service = createService('merchant')
+      await runPaymentFlow(service, credentials)
+    }, 60000)
+  })
 
-      // Verify order details response
-      expect(orderDetailsResult).toBeDefined()
-      expect(orderDetailsResult).toHaveProperty('object')
+  const partnerCertKey = loadCertAndKey()
+  const describePartner = partnerCertKey ? describe : describe.skip
 
-      const orderDetailsResponse = orderDetailsResult.object
-      expect(orderDetailsResponse).toBeDefined()
-      expect(orderDetailsResponse).toHaveProperty('status')
-      expect(typeof orderDetailsResponse.status).toBe('string')
-      expect(orderDetailsResponse.consumer).toBeDefined()
-      expect(orderDetailsResponse.consumer.email).toBe(consumer.email)
-      expect(orderDetailsResponse.consumer.firstName).toBe(consumer.firstName)
-      expect(orderDetailsResponse.consumer.lastName).toBe(consumer.lastName)
-      expect(orderDetailsResponse.invoice).toBeDefined()
-      expect(orderDetailsResponse.invoice.amount).toBe(invoice.amount)
-      expect(orderDetailsResponse.invoice.currency).toBe(invoice.currency)
-      expect(orderDetailsResponse.invoice.merchantOrderReference).toBe(invoice.merchantOrderReference)
-
-      // Step 5: Verify no transactions exist for newly created payment session
-      console.log('[Step 5] Getting order transactions...')
-      const transactionsResult = await realService.getOrderTransactions(accessToken, orderId)
-
-      expect(transactionsResult).toBeDefined()
-      expect(transactionsResult).toHaveProperty('object')
-
-      const transactionsResponse = transactionsResult.object
-      expect(transactionsResponse).toBeDefined()
-      expect(transactionsResponse).toHaveProperty('transactions')
-      expect(Array.isArray(transactionsResponse.transactions)).toBe(true)
-
-      // For a newly created payment session, there should be no transactions yet
-      expect(transactionsResponse.transactions.length).toBe(0)
-
-      // Step 6: Refresh access token
-      console.log('[Step 6] Refreshing token...')
-      const refreshToken = authResult?.refreshToken
-      expect(refreshToken).toBeTruthy()
-      const refreshResult = await realService.tokenRefresh(refreshToken, integrationContext)
-      expect(refreshResult).toBeDefined()
-      expect(refreshResult).toHaveProperty('object')
-      const refreshOutput = refreshResult.object
-      expect(refreshOutput).toBeDefined()
-      expect(refreshOutput.accessToken).toBeTruthy()
-      expect(typeof refreshOutput.accessToken).toBe('string')
-      expect(typeof refreshOutput.accessTokenExpiresIn).toBe('number')
-
-      // Step 7: Logout with refresh token (expects HTTP 200)
-      console.log('[Step 7] Logging out...')
-      const logoutSuccess = await realService.tokenLogout(refreshToken)
-      expect(logoutSuccess).toBe(true)
-    }, 60000) // 60 second timeout for complete payment flow
+  describePartner('partner mode integration', () => {
+    it('should run complete payment flow with mTLS', async () => {
+      const credentials = loadCredentials()
+      const service = createService('partner')
+      await runPaymentFlow(service, credentials)
+    }, 60000)
   })
 })

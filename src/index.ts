@@ -5,6 +5,14 @@
 
 // Core API - Use RaiAcceptService as the unified client
 export { RaiAcceptService } from './RaiAcceptService.js';
+export {
+  type AuthMode,
+  type RaiAcceptClientConfig,
+  DEFAULT_AUTH_MODE,
+  RAIACCEPT_URLS,
+  resolveAuthMode,
+  assertTlsCredentialsPair,
+} from './types/IntegrationMode.js';
 export { HttpClient, type Logger, type HttpClientConfig, type HttpRequest, type HttpResponse } from './HttpClient.js';
 export { RaiAcceptLogger } from './RaiAcceptLogger.js';
 

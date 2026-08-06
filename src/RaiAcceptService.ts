@@ -10,6 +10,7 @@ import { RefundResponse } from './models/RefundResponse.js';
 import { AuthApiLoginOutput } from './models/AuthApiLoginOutput.js';
 import type { IntegrationContext } from './models/AuthApiLoginInput.js';
 import { AuthApiRefreshOutput } from './models/AuthApiRefreshOutput.js';
+import type { RaiAcceptClientConfig } from './types/IntegrationMode.js';
 
 /**
  * RaiAcceptService
@@ -31,11 +32,17 @@ export class RaiAcceptService {
   /**
    * Create a new RaiAcceptService instance
    * @param httpClient - HTTP client instance (optional)
-   * @param cert - Client certificate for mTLS (optional, required for retrieveAccessTokenWithCredentials)
-   * @param key - Client private key for mTLS (optional, required for retrieveAccessTokenWithCredentials)
+   * @param cert - Client certificate for mTLS (required for partner mode)
+   * @param key - Client private key for mTLS (required for partner mode)
+   * @param config - Client configuration; authMode defaults to merchant, or partner when cert and key are both provided
    */
-  constructor(httpClient: HttpClient | null = null, cert?: string | Buffer, key?: string | Buffer) {
-    this.apiClient = new RaiAcceptAPIApi(httpClient, cert, key);
+  constructor(
+    httpClient: HttpClient | null = null,
+    cert?: string | Buffer,
+    key?: string | Buffer,
+    config?: RaiAcceptClientConfig
+  ) {
+    this.apiClient = new RaiAcceptAPIApi(httpClient, cert, key, config);
     this.cert = cert;
     this.key = key;
   }

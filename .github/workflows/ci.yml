@@ -56,10 +56,9 @@ jobs:
     - name: Check if credentials are available
       id: check-creds
       run: |
-        if [ -z "${{ secrets.RAIACCEPT_TEST_USERNAME }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_PASSWORD }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_CERT_BASE64 }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_KEY_BASE64 }}" ]; then
+        if [ -z "${{ secrets.RAIACCEPT_TEST_USERNAME }}" ] || [ -z "${{ secrets.RAIACCEPT_TEST_PASSWORD }}" ]; then
           echo "skip=true" >> $GITHUB_OUTPUT
-          echo "⚠️  Integration tests skipped: GitHub Secrets not configured"
-          echo "See .github/SETUP_CI.md for setup instructions"
+          echo "Integration tests skipped: RAIACCEPT_TEST_USERNAME/RAIACCEPT_TEST_PASSWORD not configured"
         else
           echo "skip=false" >> $GITHUB_OUTPUT
         fi

@@ -10,12 +10,11 @@ async function main(): Promise<void> {
   try {
     console.log('Creating service and authenticating...');
 
-    // Load mTLS cert and key (from env, files, or secure storage)
-    const cert = process.env.RAIACCEPT_CERT || '';  // Replace with your cert
-    const key = process.env.RAIACCEPT_KEY || '';   // Replace with your key
+    // Create service instance (merchant mode — default, no mTLS)
+    const client = new RaiAcceptService(new HttpClient());
 
-    // Create service instance with cert and key
-    const client = new RaiAcceptService(null, cert, key);
+    // For partner mode with mTLS, use:
+    // const client = new RaiAcceptService(new HttpClient(), cert, key, { authMode: 'partner' });
 
     // Authenticate with your credentials
     const integrationContext = {
