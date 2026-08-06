@@ -41,7 +41,7 @@ describe('RaiAcceptAPIApi routing', () => {
     })
 
     it('uses trapi.raiaccept.com for create order', () => {
-      const request = api.createOrderEntryRequest('access-token', {} as any)
+      const request = api.createOrderEntryRequest('access-token', {})
       expect(request.url).toBe('https://trapi.raiaccept.com/orders')
       expect(request.cert).toBeUndefined()
       expect(request.key).toBeUndefined()
@@ -80,7 +80,7 @@ describe('RaiAcceptAPIApi routing', () => {
     })
 
     it('uses api.raiaccept.com for API calls with mTLS', () => {
-      const request = api.createOrderEntryRequest('access-token', {} as any)
+      const request = api.createOrderEntryRequest('access-token', {})
       expect(request.url).toBe('https://api.raiaccept.com/orders')
       expect(request.cert).toBe(TEST_CERT)
       expect(request.key).toBe(TEST_KEY)
