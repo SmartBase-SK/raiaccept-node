@@ -1,6 +1,6 @@
 {
   "name": "@smartbase-js/raiaccept-api-client",
-  "version": "0.9.5",
+  "version": "0.10.0",
   "description": "TypeScript SDK for RaiAccept payment gateway API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,8 +17,10 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "unit-tests": "vitest run tests/unit.test.js",
+    "unit-tests": "vitest run tests/unit.test.js tests/routing.test.js",
     "integration-tests": "vitest run --config vitest.integration.config.js",
+    "integration-tests:merchant": "vitest run --config vitest.integration.config.js -t \"merchant mode integration\"",
+    "integration-tests:partner": "vitest run --config vitest.integration.config.js -t \"partner mode integration\"",
     "prepublishOnly": "npm run build",
     "publish:public": "npm publish --access public"
   },

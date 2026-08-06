@@ -13,93 +13,110 @@ TypeScript/JavaScript SDK for RaiAccept payment gateway API.
 npm install @smartbase-js/raiaccept-api-client
 ```
 
-## Usage
+## Integration modes
 
-```typescript
-import { RaiAcceptService } from '@smartbase-js/raiaccept-api-client';
+| | Merchant (default) | Partner |
+|--|-------------------|---------|
+| Auth | `https://auth.raiaccept.com/auth/api/*` | `https://api.raiaccept.com/auth/api/*` |
+| API | `https://trapi.raiaccept.com` | `https://api.raiaccept.com` |
+| mTLS | Not used | Required (cert + key) |
 
-// Create service instance
-const service = new RaiAcceptService();
+When both `cert` and `key` are passed to the constructor, partner mode is selected automatically. Use `{ authMode: 'merchant' }` to force merchant mode despite cert/key (e.g. testing), or `{ authMode: 'partner' }` for explicit opt-in. Providing only cert or only key, or partner mode without both cert and key, throws `InvalidArgumentException` at construction time.
 
-// Authenticate with your credentials
-const authResult = await service.retrieveAccessTokenWithCredentials(
-  'your-username',  // Replace with your actual username
-  'your-password',  // Replace with your actual password
-  cert,             // Client certificate for mTLS
-  key               // Client private key for mTLS
-);
-const accessToken = authResult?.accessToken;
+## Merchant integration (default)
 
-const response = await service.createOrderEntry(accessToken, orderRequest);
-```
-
-### Create Payment
+For direct merchant integrations — no mTLS required.
 
 ```typescript
 import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
 
-// Initialize HTTP client (optional, for logging)
-const httpClient = new HttpClient({
-  logger: console, // Optional: for debugging
-});
-
-// Initialize the unified SDK client
+const httpClient = new HttpClient({ logger: console });
 const service = new RaiAcceptService(httpClient);
 
-// Authenticate
+const integrationContext = {
+  type: 'CODE',
+  data: {
+    name: 'YourShop',
+    version: '1.0',
+    vendor: 'YourVendor',
+  },
+};
+
 const authResult = await service.retrieveAccessTokenWithCredentials(
   'your-username',
   'your-password',
-  cert,  // Client certificate for mTLS
-  key    // Client private key for mTLS
+  integrationContext
 );
 const accessToken = authResult?.accessToken;
 
-// Create an order and payment session (two-step process)
+// API calls use trapi.raiaccept.com with Bearer token only
+const orderResponse = await service.createOrderEntry(accessToken, orderRequest);
+```
+
+### Token refresh and logout (merchant)
+
+```typescript
+const refreshed = await service.tokenRefresh(authResult.refreshToken, integrationContext);
+await service.tokenLogout(authResult.refreshToken);
+```
+
+## Partner integration
+
+For platform/partner integrations (e.g. Shopify apps) — requires mTLS client certificate.
+
+```typescript
+import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
+import { readFileSync } from 'fs';
+
+const cert = readFileSync('/path/to/client.crt', 'utf-8');
+const key = readFileSync('/path/to/client.key', 'utf-8');
+
+const httpClient = new HttpClient({ logger: console });
+const service = new RaiAcceptService(httpClient, cert, key);
+
+const authResult = await service.retrieveAccessTokenWithCredentials(
+  'merchant-username',
+  'merchant-password',
+  integrationContext
+);
+```
+
+## Create payment (both modes)
+
+```typescript
 const orderRequest = {
   invoice: {
     amount: 100.00,
     currency: 'EUR',
     description: 'Test payment',
     merchantOrderReference: 'ORDER-123',
-    items: [
-      {
-        description: 'Product 1',
-        numberOfItems: 1,
-        price: 100.00
-      }
-    ]
+    items: [{ description: 'Product 1', numberOfItems: 1, price: 100.00 }],
   },
   urls: {
     successUrl: 'https://example.com/success',
     failUrl: 'https://example.com/fail',
     cancelUrl: 'https://example.com/cancel',
-    notificationUrl: 'https://example.com/webhook'
+    notificationUrl: 'https://example.com/webhook',
   },
   consumer: {
     email: 'customer@example.com',
     firstName: 'John',
     lastName: 'Doe',
-    phone: '+1234567890'
+    phone: '+1234567890',
   },
   paymentMethodPreference: 'CARD',
-  linkId: 'unique-link-id'
+  linkId: 'unique-link-id',
 };
 
-// Step 1: Create order entry
 const orderResponse = await service.createOrderEntry(accessToken, orderRequest);
-const orderIdentification = orderResponse.object.getOrderIdentification();
-console.log('Order created:', orderIdentification);
+const orderId = orderResponse.object.getOrderIdentification();
 
-// Step 2: Create payment session for the order
 const paymentSessionResponse = await service.createPaymentSession(
   accessToken,
   orderRequest,
-  orderIdentification
+  orderId
 );
-
-const paymentRedirectURL = paymentSessionResponse.object?.paymentRedirectURL;
-console.log('Payment session created. Redirect customer to:', paymentRedirectURL);
+console.log('Redirect to:', paymentSessionResponse.object?.paymentRedirectURL);
 ```
 
 ## API Reference
@@ -107,67 +124,72 @@ console.log('Payment session created. Redirect customer to:', paymentRedirectURL
 ### Initialization
 
 ```typescript
-import { RaiAcceptService, HttpClient } from '@smartbase-js/raiaccept-api-client';
+// Merchant (default)
+new RaiAcceptService(httpClient);
 
-// With HTTP client (recommended for logging)
-const httpClient = new HttpClient({ logger: console });
-const client = new RaiAcceptService(httpClient);
+// Partner (auto-detected when cert + key provided)
+new RaiAcceptService(httpClient, cert, key);
 
-// Without HTTP client (uses default)
-const client = new RaiAcceptService();
+// Explicit override
+new RaiAcceptService(httpClient, cert, key, { authMode: 'partner' });
+new RaiAcceptService(httpClient, cert, key, { authMode: 'merchant' });
 ```
 
 ### Authentication
 
+- `retrieveAccessTokenWithCredentials(username, password, integrationContext)`
+- `tokenRefresh(refreshToken, integrationContext)`
+- `tokenLogout(refreshToken)`
+
+### Order operations
+
+- `createOrderEntry(accessToken, orderRequest)`
+- `createPaymentSession(accessToken, sessionRequest, externalOrderId)`
+- `getOrderDetails(accessToken, orderId)`
+- `getOrderTransactions(accessToken, orderId)`
+
+### Transaction operations
+
+- `getTransactionDetails(accessToken, orderId, transactionId)`
+- `refund(accessToken, orderId, transactionId, refundRequest)`
+
+### Utility functions
+
+Static helpers on `RaiAcceptService` for normalizing order/payment payload data:
+
+- `RaiAcceptService.transliterate(string)` — transliterate non-Latin characters to Latin
+- `RaiAcceptService.transliterateAndLimitLength(string, limit?)` — transliterate and truncate (default limit 127)
+- `RaiAcceptService.cleanPhoneNumber(phoneNumber)` — normalize phone number format (digits + leading `+`, max 15 chars)
+- `RaiAcceptService.getCountryIso3(countryCode)` — convert 2-letter ISO country code to 3-letter
+- `RaiAcceptService.getPaidStatuses()` / `getFailedStatuses()` / `getCancelledStatuses()` / `getRejectedStatuses()` — payment status groupings
+
 ```typescript
-const authResult = await client.retrieveAccessTokenWithCredentials(
-  username,
-  password,
-  cert,  // Client certificate for mTLS
-  key    // Client private key for mTLS
-);
-const accessToken = authResult?.accessToken;
-// Also available: authResult.refreshToken, authResult.accessTokenExpiresIn, authResult.refreshTokenExpiresIn
+RaiAcceptService.transliterate('Γεια σου');           // 'Geia sou'
+RaiAcceptService.cleanPhoneNumber('+1 (234) 567-8900'); // '+12345678900'
+RaiAcceptService.getCountryIso3('SK');                  // 'SVK'
 ```
 
-### Order Operations
+## Migration from 0.9.x
 
-- `client.createOrderEntry(accessToken, orderRequest)` - Create a new order
-- `client.createPaymentSession(accessToken, sessionRequest, externalOrderId)` - Create payment session
-- `client.getOrderDetails(accessToken, orderId)` - Get order details
-- `client.getOrderTransactions(accessToken, orderId)` - Get order transactions
+Version 0.10.0 defaults to **merchant mode**. Partner integrations with cert + key work as in 0.9.x — mode is auto-detected. You may still pass `{ authMode: 'partner' }` explicitly.
 
-### Transaction Operations
+```typescript
+new RaiAcceptService(httpClient, cert, key);
+```
 
-- `client.getTransactionDetails(accessToken, orderId, transactionId)` - Get transaction details
-- `client.refund(accessToken, orderId, transactionId, refundRequest)` - Process a refund
-
-### Utility Functions
-
-- `RaiAcceptService.transliterate(string)` - Transliterate non-Latin characters
-- `RaiAcceptService.transliterateAndLimitLength(string, limit)` - Transliterate and limit length
-- `RaiAcceptService.cleanPhoneNumber(phoneNumber)` - Clean phone number format
-- `RaiAcceptService.getCountryIso3(countryCode)` - Convert 2-letter to 3-letter country code
-
-## TypeScript Support
-
-This SDK is written in TypeScript and includes full type definitions. All types are exported and available for use in your TypeScript projects.
+See [CHANGELOG.md](./CHANGELOG.md) for details.
 
 ## Testing
 
-Run the test suite:
-
 ```bash
-# Run unit tests (mocked)
 npm run unit-tests
-
-# Run integration tests (real API calls!)
 npm run integration-tests
+npm run integration-tests:merchant
+npm run integration-tests:partner
 ```
 
-For more details, see [TEST_SETUP.md](./TEST_SETUP.md) and [tests/README.md](./tests/README.md).
+See [TEST_SETUP.md](./TEST_SETUP.md) and [tests/README.md](./tests/README.md).
 
 ## License
 
 OSL-3.0
-
