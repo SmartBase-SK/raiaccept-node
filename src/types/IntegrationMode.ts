@@ -40,6 +40,24 @@ export function assertTlsCredentialsPair(
 }
 
 /**
+ * Fail fast when partner mode is selected without both cert and key.
+ */
+export function assertPartnerTlsRequired(
+  cert?: string | Buffer,
+  key?: string | Buffer,
+  authMode?: AuthMode
+): void {
+  if (authMode !== 'partner') {
+    return;
+  }
+  if (!hasTlsCredential(cert) || !hasTlsCredential(key)) {
+    throw new InvalidArgumentException(
+      'Partner mode requires both cert and key in the constructor.'
+    );
+  }
+}
+
+/**
  * Resolve auth mode: explicit config wins; otherwise partner when both cert and key
  * are provided, merchant by default. Throws when only one of cert/key is set.
  */
@@ -57,4 +75,17 @@ export function resolveAuthMode(
     return 'partner';
   }
   return DEFAULT_AUTH_MODE;
+}
+
+/**
+ * Validate TLS credentials for the resolved auth mode.
+ */
+export function validateAuthModeConfiguration(
+  cert?: string | Buffer,
+  key?: string | Buffer,
+  config?: RaiAcceptClientConfig
+): AuthMode {
+  const authMode = resolveAuthMode(cert, key, config);
+  assertPartnerTlsRequired(cert, key, authMode);
+  return authMode;
 }

@@ -19,7 +19,7 @@ import {
   type AuthMode,
   type RaiAcceptClientConfig,
   RAIACCEPT_URLS,
-  resolveAuthMode,
+  validateAuthModeConfiguration,
 } from '../types/IntegrationMode.js';
 
 export interface ApiResponse<T> {
@@ -34,11 +34,6 @@ type TlsOptions = Pick<HttpRequest, 'cert' | 'key'>;
  * Main API client for RaiAccept payment gateway
  */
 export class RaiAcceptAPIApi {
-  /** @deprecated Use mode-specific URLs via authMode config. Partner auth URL. */
-  static AUTH_URL = RAIACCEPT_URLS.partner.auth;
-  /** @deprecated Use mode-specific URLs via authMode config. Partner API URL. */
-  static API_URL = RAIACCEPT_URLS.partner.api;
-
   static ACCEPTED_LANGUAGES = [
     'en', 'de', 'fr', 'cs', 'sk', 'sr', 'al', 'ro', 'pl', 'hr'
   ];
@@ -64,7 +59,7 @@ export class RaiAcceptAPIApi {
     this.client = client || new HttpClient();
     this.cert = cert;
     this.key = key;
-    this.authMode = resolveAuthMode(cert, key, config);
+    this.authMode = validateAuthModeConfiguration(cert, key, config);
   }
 
   getAuthMode(): AuthMode {
@@ -79,21 +74,11 @@ export class RaiAcceptAPIApi {
     return RAIACCEPT_URLS[this.authMode].api;
   }
 
-  private requirePartnerTls(context: string): TlsOptions {
+  private requirePartnerTls(): TlsOptions {
     if (this.authMode !== 'partner') {
       return {};
     }
-    if (!this.cert) {
-      throw new InvalidArgumentException(
-        `Missing the required parameter $cert when calling ${context} (provide in constructor with authMode: 'partner')`
-      );
-    }
-    if (!this.key) {
-      throw new InvalidArgumentException(
-        `Missing the required parameter $key when calling ${context} (provide in constructor with authMode: 'partner')`
-      );
-    }
-    return { cert: this.cert, key: this.key };
+    return { cert: this.cert!, key: this.key! };
   }
 
   getAcceptedLanguages(): string[] {
@@ -189,7 +174,7 @@ export class RaiAcceptAPIApi {
       url: `${this.authBaseUrl}/auth/api/login`,
       headers: headers,
       body: httpBody,
-      ...this.requirePartnerTls('token'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -226,7 +211,7 @@ export class RaiAcceptAPIApi {
       url: `${this.authBaseUrl}/auth/api/refresh`,
       headers: headers,
       body: httpBody,
-      ...this.requirePartnerTls('tokenRefresh'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -260,7 +245,7 @@ export class RaiAcceptAPIApi {
       url: `${this.authBaseUrl}/auth/api/logout`,
       headers: headers,
       body: httpBody,
-      ...this.requirePartnerTls('tokenLogout'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -294,7 +279,7 @@ export class RaiAcceptAPIApi {
       url: this.apiBaseUrl + resourcePath,
       headers: headers,
       body: httpBody,
-      ...this.requirePartnerTls('createOrderEntry'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -336,7 +321,7 @@ export class RaiAcceptAPIApi {
       url: resourcePath,
       headers: headers,
       body: httpBody,
-      ...this.requirePartnerTls('createPaymentSession'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -368,7 +353,7 @@ export class RaiAcceptAPIApi {
       method: 'GET',
       url: resourcePath,
       headers: headers,
-      ...this.requirePartnerTls('getOrderDetails'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -405,7 +390,7 @@ export class RaiAcceptAPIApi {
       method: 'GET',
       url: resourcePath,
       headers: headers,
-      ...this.requirePartnerTls('getTransactionDetails'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -437,7 +422,7 @@ export class RaiAcceptAPIApi {
       method: 'GET',
       url: resourcePath,
       headers: headers,
-      ...this.requirePartnerTls('getOrderTransactions'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 
@@ -482,7 +467,7 @@ export class RaiAcceptAPIApi {
       url: resourcePath,
       headers: headers,
       body: httpBody,
-      ...this.requirePartnerTls('refund'),
+      ...this.requirePartnerTls(),
     } as HttpRequest;
   }
 }

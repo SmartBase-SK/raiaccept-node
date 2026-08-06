@@ -21,7 +21,7 @@ npm install @smartbase-js/raiaccept-api-client
 | API | `https://trapi.raiaccept.com` | `https://api.raiaccept.com` |
 | mTLS | Not used | Required (cert + key) |
 
-When both `cert` and `key` are passed to the constructor, partner mode is selected automatically. Use `{ authMode: 'merchant' }` to force merchant mode despite cert/key (e.g. testing), or `{ authMode: 'partner' }` for explicit opt-in. Providing only cert or only key throws `InvalidArgumentException` at construction time.
+When both `cert` and `key` are passed to the constructor, partner mode is selected automatically. Use `{ authMode: 'merchant' }` to force merchant mode despite cert/key (e.g. testing), or `{ authMode: 'partner' }` for explicit opt-in. Providing only cert or only key, or partner mode without both cert and key, throws `InvalidArgumentException` at construction time.
 
 ## Merchant integration (default)
 
@@ -152,6 +152,22 @@ new RaiAcceptService(httpClient, cert, key, { authMode: 'merchant' });
 
 - `getTransactionDetails(accessToken, orderId, transactionId)`
 - `refund(accessToken, orderId, transactionId, refundRequest)`
+
+### Utility functions
+
+Static helpers on `RaiAcceptService` for normalizing order/payment payload data:
+
+- `RaiAcceptService.transliterate(string)` — transliterate non-Latin characters to Latin
+- `RaiAcceptService.transliterateAndLimitLength(string, limit?)` — transliterate and truncate (default limit 127)
+- `RaiAcceptService.cleanPhoneNumber(phoneNumber)` — normalize phone number format (digits + leading `+`, max 15 chars)
+- `RaiAcceptService.getCountryIso3(countryCode)` — convert 2-letter ISO country code to 3-letter
+- `RaiAcceptService.getPaidStatuses()` / `getFailedStatuses()` / `getCancelledStatuses()` / `getRejectedStatuses()` — payment status groupings
+
+```typescript
+RaiAcceptService.transliterate('Γεια σου');           // 'Geia sou'
+RaiAcceptService.cleanPhoneNumber('+1 (234) 567-8900'); // '+12345678900'
+RaiAcceptService.getCountryIso3('SK');                  // 'SVK'
+```
 
 ## Migration from 0.9.x
 

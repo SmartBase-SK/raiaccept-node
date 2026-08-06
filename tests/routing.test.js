@@ -86,9 +86,8 @@ describe('RaiAcceptAPIApi routing', () => {
       expect(request.key).toBe(TEST_KEY)
     })
 
-    it('throws when cert/key missing', () => {
-      const apiWithoutTls = new RaiAcceptAPIApi(new HttpClient(), undefined, undefined, { authMode: 'partner' })
-      expect(() => apiWithoutTls.tokenRequest('user', 'pass', integrationContext)).toThrow(InvalidArgumentException)
+    it('throws at construction when cert/key missing for explicit partner mode', () => {
+      expect(() => new RaiAcceptAPIApi(new HttpClient(), undefined, undefined, { authMode: 'partner' })).toThrow(InvalidArgumentException)
     })
   })
 

@@ -12,6 +12,8 @@ export {
   RAIACCEPT_URLS,
   resolveAuthMode,
   assertTlsCredentialsPair,
+  assertPartnerTlsRequired,
+  validateAuthModeConfiguration,
 } from './types/IntegrationMode.js';
 export { HttpClient, type Logger, type HttpClientConfig, type HttpRequest, type HttpResponse } from './HttpClient.js';
 export { RaiAcceptLogger } from './RaiAcceptLogger.js';
