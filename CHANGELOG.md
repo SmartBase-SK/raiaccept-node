@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0
+
+### Security
+
+- Updated dependencies to resolve known vulnerabilities (`axios`, `follow-redirects`, `form-data`); `npm audit` reports no vulnerabilities.
+
+### Changed
+
+- Minimum `axios` version raised to `^1.20.0` (fixes all known axios advisories in 1.0.0 - 1.19.0).
+- Development tooling upgraded: `vitest` 4, `@vitest/ui` 4, `vite` 6. No changes to the public API.
+
 ## 0.10.0
 
 ### Added
